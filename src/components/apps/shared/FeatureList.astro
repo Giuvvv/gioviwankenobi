@@ -1,0 +1,63 @@
+---
+import type { App } from '~/utils/apps';
+
+export interface Props {
+  features: App['data']['features'];
+  headingId: string;
+}
+
+const { features, headingId } = Astro.props;
+---
+
+{
+  features.length > 0 && (
+    <section class="section section--tight section-divider" aria-labelledby={headingId}>
+      <div class="wrap">
+        <h2 id={headingId}>What it does</h2>
+        <dl class="features">
+          {features.map((feature) => (
+            <div class="features__row">
+              <dt class="features__title">{feature.title}</dt>
+              <dd class="features__body">{feature.body}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .features {
+    margin: var(--space-l) 0 0;
+    border-top: var(--border) solid var(--line);
+  }
+
+  .features__row {
+    display: grid;
+    gap: var(--space-2xs);
+    padding-block: var(--space-m);
+    border-bottom: var(--border) solid var(--line);
+  }
+
+  @media (min-width: 48rem) {
+    .features__row {
+      grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+      gap: var(--space-xl);
+      align-items: baseline;
+    }
+  }
+
+  .features__title {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .features__body {
+    margin: 0;
+    color: var(--ink-muted);
+    max-width: 58ch;
+  }
+</style>

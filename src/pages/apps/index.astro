@@ -1,0 +1,76 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import PageHeader from '~/components/site/PageHeader.astro';
+import AppGrid from '~/components/apps/shared/AppGrid.astro';
+import AppCard from '~/components/apps/shared/AppCard.astro';
+import { getApps, missingLegalTranslations } from '~/utils/apps';
+import { url } from '~/utils/paths';
+
+const apps = await getApps();
+
+/*
+ * Reported once per build, from the one page that already lists every app.
+ * A policy that exists in English but not in a language the app ships in is a
+ * gap the developer needs to see; visitors never do.
+ */
+for (const gap of await missingLegalTranslations()) {
+  console.warn(
+    `[legal] ${gap.app}: ${gap.kind} is missing ${gap.locales.join(', ')} ` +
+      `(the app declares those languages). Add ` +
+      `src/content/legal/${gap.app}/${gap.kind}.${gap.locales[0]}.md`,
+  );
+}
+---
+
+<BaseLayout
+  title="Projects"
+  description="Every app published by gioviwankenobi, with its own page, download links and policies."
+>
+  <PageHeader
+    title="Projects"
+    lede="Everything published so far. Each one has its own page, its own downloads and its own policies."
+  />
+
+  {
+    apps.length > 0 ? (
+      <div class="wrap apps-index">
+        <AppGrid>
+          {apps.map((app) => (
+            <AppCard app={app} headingLevel={2} />
+          ))}
+        </AppGrid>
+      </div>
+    ) : (
+      <div class="wrap">
+        <div class="apps-empty">
+          <h2>Nothing published yet</h2>
+          <p>
+            The catalog is empty. The first app appears here as soon as its entry
+            lands in <code>src/content/apps/</code>.
+          </p>
+          <p>
+            <a class="btn" href={url('/about')}>About this site</a>
+          </p>
+        </div>
+      </div>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .apps-index { padding-block-end: var(--space-section); }
+
+  .apps-empty {
+    border: var(--border) dashed var(--line-strong);
+    border-radius: var(--radius);
+    padding: var(--space-xl);
+    max-width: 44ch;
+    margin-block-end: var(--space-section);
+    display: grid;
+    gap: var(--space-s);
+  }
+
+  .apps-empty h2 { font-size: var(--step-2); }
+
+  .apps-empty p { color: var(--ink-muted); font-size: var(--step--1); }
+</style>

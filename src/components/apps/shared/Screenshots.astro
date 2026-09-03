@@ -1,0 +1,150 @@
+---
+/**
+ * The visual tour of an app: one screen at a time, each beside the one thing
+ * it is there to show.
+ *
+ * This used to be a horizontal strip of four phones with a caption apiece. A
+ * row of screenshots asks the reader to work out for themselves what each is
+ * for, and puts the explanation somewhere else on the page. Pairing each screen
+ * with its own sentence, and alternating which side it sits on, says the thing
+ * and shows it in the same breath.
+ *
+ * A screenshot with no `body` still works: it falls back to a plain figure, so
+ * an app that has not written its tour yet is not broken by this.
+ */
+import { Image } from 'astro:assets';
+import type { App } from '~/utils/apps';
+import { appImage } from '~/utils/images';
+
+export interface Props {
+  screenshots: App['data']['screenshots'];
+  appName: string;
+  headingId?: string;
+}
+
+const { screenshots, appName, headingId = 'screens' } = Astro.props;
+
+const shots = screenshots.map((shot) => ({ ...shot, image: appImage(shot.src) }));
+---
+
+{
+  shots.length > 0 && (
+    <section class="section section--tight section-divider" aria-labelledby={headingId}>
+      <div class="wrap">
+        <h2 id={headingId} class="visually-hidden">
+          {appName} screen by screen
+        </h2>
+
+        <ol class="tour">
+          {shots.map((shot, index) => (
+            <li class="tour__row" data-flip={index % 2 === 1 ? '' : null}>
+              <div class="tour__media">
+                <div class="tour__frame">
+                  {/*
+                    sizes is the exact painted width, not a rough one. The frame
+                    is 26rem with 6px of padding a side, so the picture is 404.
+                    Asked for the frame width the browser fetched a larger variant and
+                    squashed it to 340 itself, resampling twice: once well in
+                    sharp and once again in the browser. A 360 variant lands
+                    where it is drawn, so only the good resize happens.
+                  */}
+                  <Image
+                    class="tour__shot"
+                    src={shot.image}
+                    alt={shot.alt}
+                    widths={[360, 480, 720, 1170, 2340]}
+                    quality={92}
+                    sizes="(min-width: 48rem) 404px, calc(80vw - 12px)"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                </div>
+              </div>
+
+              <div class="tour__text">
+                <h3 class="tour__title">{shot.caption ?? shot.alt}</h3>
+                {shot.body && <p class="tour__body">{shot.body}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .tour {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: clamp(var(--space-l), 7vw, var(--space-2xl));
+  }
+
+  .tour__row {
+    display: grid;
+    gap: var(--space-m);
+    align-items: center;
+  }
+
+  @media (min-width: 48rem) {
+    .tour__row {
+      grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+      gap: clamp(var(--space-l), 5vw, var(--space-2xl));
+    }
+
+    /*
+     * Alternating sides, so four rows read as a walk rather than a list. The
+     * track widths swap along with the order: moving only the order left the
+     * text in the narrow column and the picture rattling around in the wide
+     * one, which broke every other paragraph into three-word lines.
+     */
+    .tour__row[data-flip] {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+    }
+
+    .tour__row[data-flip] .tour__media { order: 2; }
+  }
+
+  .tour__media { display: grid; justify-items: center; }
+
+  /*
+   * The same slim surround the strip used: a screenshot laid flat reads as a
+   * picture of a card, and sitting it in a dark frame reads as a screen.
+   */
+  .tour__frame {
+    width: min(80vw, 26rem);
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--plate);
+    border: var(--border) solid var(--line);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .tour__shot {
+    display: block;
+    width: 100%;
+    /*
+     * Capped and cropped from the top. At full height four portrait screens
+     * make the page enormous, and the top of every one of these screens is
+     * where its point is made.
+     */
+    height: clamp(22rem, 56vh, 34rem);
+    object-fit: cover;
+    object-position: top center;
+    border-radius: 9px;
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+
+  .tour__title {
+    font-size: var(--step-2);
+    text-wrap: balance;
+  }
+
+  .tour__body {
+    margin-block-start: var(--space-xs);
+    max-width: 42ch;
+    color: var(--ink-muted);
+  }
+</style>

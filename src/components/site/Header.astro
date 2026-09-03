@@ -1,0 +1,146 @@
+---
+import { siteConfig } from '~/config/site';
+import { url, isActive } from '~/utils/paths';
+
+const pathname = Astro.url.pathname;
+const home = url();
+---
+
+<header class="site-header" data-header>
+  <div class="site-header__inner wrap">
+    <a class="site-header__brand" href={home} aria-current={pathname === home ? 'page' : undefined}>
+      gioviwankenobi
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <ul class="site-nav__list">
+        {
+          siteConfig.nav.map((item) => {
+            // A nav entry may carry a hash ("/about#contact"). url() would
+            // swallow it into the path, so split it off and re-attach.
+            const [path, hash] = item.href.split('#');
+            const base = url(path);
+            const href = hash ? `${base}#${hash}` : base;
+            const active = !hash && isActive(pathname, base);
+            return (
+              <li>
+                <a class="site-nav__link" href={href} aria-current={active ? 'page' : undefined}>
+                  {item.label}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  /* A full-width bar, not a floating box. Content has to scroll under
+     something; when that something spans the viewport it reads as a bar, and
+     when it is a centred pill it reads as text being cut in half. */
+  .site-header {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: var(--z-header);
+    background: rgba(11, 10, 8, 0.88);
+    border-bottom: var(--border) solid var(--line);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    transition: transform var(--dur-slow) var(--ease), opacity var(--dur-slow) var(--ease);
+  }
+
+  @supports not (backdrop-filter: blur(2px)) {
+    .site-header { background: rgba(11, 10, 8, 0.98); }
+  }
+
+  /* Pages with a full-height hero start with no bar at all. It arrives once
+     you begin to scroll, which is set by [data-header] state in the script. */
+  .site-header[data-hidden] {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    height: var(--header-height);
+  }
+
+  .site-header__brand {
+    font-family: var(--font-display);
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: var(--ink);
+    margin-inline-end: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .site-nav__list {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-nav__link {
+    display: inline-block;
+    font-size: var(--step--1);
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--ink-muted);
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+  }
+
+  .site-nav__link:hover { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+
+  .site-nav__link[aria-current='page'] {
+    color: var(--accent);
+    background: transparent;
+    box-shadow: inset 0 -2px 0 var(--accent);
+    border-radius: 0;
+  }
+
+  /* Under 30rem the brand steps aside so four links always fit on one line. */
+  @media (max-width: 30rem) {
+    .site-header__brand { display: none; }
+    .site-header__inner { justify-content: center; }
+    .site-nav__link { padding-inline: 0.55rem; }
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const hero = document.querySelector('[data-hero]');
+
+  if (header) {
+    if (!hero) {
+      header.removeAttribute('data-hidden');
+    } else {
+      header.setAttribute('data-hidden', '');
+      // Reveal once the hero has scrolled most of the way out of view, using an
+      // observer rather than a scroll handler so nothing runs per frame.
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry) return;
+          if (entry.isIntersecting) header.setAttribute('data-hidden', '');
+          else header.removeAttribute('data-hidden');
+        },
+        { rootMargin: '-25% 0px 0px 0px', threshold: 0 },
+      );
+      io.observe(hero);
+    }
+  }
+</script>

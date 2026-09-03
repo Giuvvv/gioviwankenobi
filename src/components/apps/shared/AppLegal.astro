@@ -1,0 +1,99 @@
+---
+import { Icon } from 'astro-icon/components';
+import { LEGAL_LABELS, legalUrl } from '~/utils/legal';
+import { languageName } from '~/utils/format';
+import { siteConfig } from '~/config/site';
+import { localesFor, type LegalKind, type LegalRef } from '~/utils/apps';
+
+export interface Props {
+  scope: string;
+  refs: LegalRef[];
+  headingId: string;
+}
+
+const { scope, refs, headingId } = Astro.props;
+
+const kinds: LegalKind[] = ['privacy', 'terms'];
+const documents = kinds
+  .map((kind) => ({ kind, locales: localesFor(refs, kind) }))
+  .filter((d) => d.locales.length > 0);
+---
+
+{
+  documents.length > 0 && (
+    <section class="section section--tight section-divider" aria-labelledby={headingId}>
+      <div class="wrap">
+        <h2 id={headingId}>Legal</h2>
+        <ul class="app-legal">
+          {documents.map((doc) => (
+            <li class="app-legal__row">
+              <a class="app-legal__link" href={legalUrl(scope, doc.kind, doc.locales[0]!)}>
+                <span>{LEGAL_LABELS[doc.kind]}</span>
+                <Icon name="ph:arrow-right" aria-hidden="true" />
+              </a>
+              {doc.locales.length > 1 && (
+                <p class="app-legal__locales meta">
+                  {doc.locales.map((locale) => (
+                    <a href={legalUrl(scope, doc.kind, locale)} hreflang={locale}>
+                      {languageName(locale)}
+                      {locale === siteConfig.defaultLocale ? ' (default)' : ''}
+                    </a>
+                  ))}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .app-legal {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-l) 0 0;
+    border-top: var(--border) solid var(--line);
+    max-width: var(--wrap-narrow);
+  }
+
+  .app-legal__row {
+    padding-block: var(--space-m);
+    border-bottom: var(--border) solid var(--line);
+  }
+
+  .app-legal__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 550;
+    letter-spacing: var(--tracking-tight);
+    transition: padding-inline-start var(--dur) var(--ease);
+  }
+
+  .app-legal__link:hover,
+  .app-legal__link:focus-visible { padding-inline-start: var(--space-2xs); }
+
+  .app-legal__link :global(svg) {
+    color: var(--ink-faint);
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .app-legal__link:hover :global(svg) { transform: translateX(0.35rem); }
+
+  .app-legal__locales {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-block-start: var(--space-2xs);
+  }
+
+  .app-legal__locales a { color: var(--ink-faint); }
+
+  .app-legal__locales a:hover { color: var(--ink); }
+</style>

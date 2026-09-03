@@ -1,0 +1,612 @@
+---
+/**
+ * The sky, and the catalogue, are the same object.
+ *
+ * Every app is a real constellation: its shape, its position and its star
+ * count are derived deterministically from its slug and from how much the app
+ * actually contains, so the chart is stable between builds and could not
+ * belong to anyone else. Brightness encodes release status. Hovering a
+ * constellation names it; clicking it opens the app.
+ *
+ * The canvas is aria-hidden and clicking a constellation is a mouse-only
+ * enhancement: every app it opens is also reachable from the primary
+ * navigation and from the projects section, so nothing depends on it.
+ */
+import { getApps } from '~/utils/apps';
+import { url } from '~/utils/paths';
+
+export interface Props {
+  /** Slug of the app whose constellation should start lit. */
+  active?: string;
+}
+
+const { active } = Astro.props;
+const apps = await getApps();
+
+const chart = apps.map((app) => ({
+  slug: app.id,
+  name: app.data.name,
+  href: url('/apps', app.id),
+  status: app.data.status,
+  accent: app.data.accent.dark,
+  // The constellation is as big as the app is: what it does, and what it shows.
+  weight: app.data.features.length + app.data.screenshots.length,
+}));
+---
+
+<div class="sky" aria-hidden="true">
+  <div class="sky__wash"></div>
+  <canvas class="sky__canvas" data-chart data-active={active}></canvas>
+  <div class="sky__vignette"></div>
+</div>
+
+<script type="application/json" is:inline data-chart-data set:html={JSON.stringify(chart)} />
+
+<style>
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-sky);
+    background: var(--void);
+    /* The sky never takes the pointer. The content layer covers the whole
+       viewport, so hit testing is done in script against what is actually
+       under the cursor. */
+    pointer-events: none;
+  }
+
+  /* Two faint clouds of warm dust. No blue, no bloom, no blobs: this reads as
+     paper grain more than as nebula. */
+  .sky__wash {
+    position: absolute;
+    inset: -10%;
+    background:
+      radial-gradient(46% 40% at 22% 18%, rgba(233, 169, 60, 0.055) 0%, transparent 70%),
+      radial-gradient(40% 46% at 84% 72%, rgba(196, 85, 58, 0.045) 0%, transparent 72%);
+    pointer-events: none;
+  }
+
+  .sky__canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .sky__vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(125% 95% at 50% 42%, transparent 42%, rgba(6, 5, 4, 0.72) 100%);
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  type Entry = {
+    slug: string;
+    name: string;
+    href: string;
+    status: 'live' | 'beta' | 'in-development' | 'archived';
+    accent: string;
+    weight: number;
+  };
+
+  type Node = { ox: number; oy: number; r: number; a: number; x: number; y: number };
+  type Group = Entry & {
+    ax: number;
+    ay: number;
+    /** Placement actually used, after the layout probe. */
+    hx: number;
+    hy: number;
+    nodes: Node[];
+    lit: number;
+    cx: number;
+    cy: number;
+  };
+
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-chart]');
+  const raw = document.querySelector('[data-chart-data]')?.textContent;
+
+  if (canvas && raw) {
+    const entries: Entry[] = JSON.parse(raw);
+    const ctx = canvas.getContext('2d')!;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const coarse = window.matchMedia('(pointer: coarse)');
+    const activeSlug = canvas.dataset.active || '';
+
+    /* Deterministic hashing, so a slug always produces the same sky. */
+    const hash = (s: string) => {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+      return h >>> 0;
+    };
+    const rng = (seed: number) => () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+
+    /* Status dims a constellation; it must never make one invisible, which is
+       what 0.5 did to an app in development once the resting alphas below were
+       applied on top. */
+    const STATUS_ALPHA: Record<Entry['status'], number> = {
+      live: 1,
+      beta: 0.85,
+      'in-development': 0.72,
+      archived: 0.5,
+    };
+
+    /* Build one constellation per app. */
+    const groups: Group[] = entries.map((e) => {
+      const r = rng(hash(e.slug));
+      // Seed position. The real placement is settled after layout by
+      // reposition(), which is what keeps constellations off the content.
+      const ax = 0.1 + r() * 0.8;
+      const ay = 0.18 + r() * 0.42;
+
+      const count = Math.max(4, Math.min(9, 4 + e.weight));
+      const nodes: Node[] = [];
+      for (let i = 0; i < count; i++) {
+        // Placed on a jittered arc so the shape reads as an asterism rather
+        // than as a random cloud.
+        const t = (i / count) * Math.PI * 2 + r() * 0.9;
+        const rad = 0.35 + r() * 0.65;
+        nodes.push({
+          ox: Math.cos(t) * rad,
+          oy: Math.sin(t) * rad * 0.72,
+          r: i === 0 ? 2.6 : 1.1 + r() * 1.2,
+          a: 0.55 + r() * 0.45,
+          x: 0,
+          y: 0,
+        });
+      }
+      return { ...e, ax, ay, hx: ax, hy: ay, nodes, lit: e.slug === activeSlug ? 1 : 0, cx: 0, cy: 0 };
+    });
+
+    type Star = { x: number; y: number; s: number; a: number; tw: number; ph: number; d: number };
+    let field: Star[] = [];
+    let shots: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
+
+    let w = 0;
+    let h = 0;
+    let spread = 0;
+    let tx = 0;
+    let ty = 0;
+    let px = 0;
+    let py = 0;
+    let scrollY = 0;
+    let hover = -1;
+    let nextShot = 0;
+    let raf = 0;
+    let running = false;
+    /* 0 at rest, 1 at full warp. Driven by the ship, which owns the timing. */
+    let warp = 0;
+    /*
+     * True while the reader is behind the site, flying. The sky is then seen
+     * from the far side, so it is mirrored to match the panel, and the
+     * constellations go out entirely: they are the catalogue of the front of
+     * the site, and from the cockpit there is nothing to catalogue.
+     */
+    let behind = false;
+
+    /*
+     * Streaks are bucketed by brightness so they can be stroked a bucket at a
+     * time. The arrays are kept between frames and emptied rather than rebuilt,
+     * so a warp allocates nothing at all.
+     */
+    const WARP_TONES = 5;
+    const streaks: number[][] = [];
+    for (let i = 0; i < WARP_TONES; i++) streaks.push([]);
+
+    /* One sprite, tinted at draw time by globalAlpha only, keeps the field cheap. */
+    const SP = 20;
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = SP;
+    {
+      const c = sprite.getContext('2d')!;
+      const g = c.createRadialGradient(SP / 2, SP / 2, 0, SP / 2, SP / 2, SP / 2);
+      g.addColorStop(0, 'rgba(242,237,225,1)');
+      g.addColorStop(0.3, 'rgba(242,237,225,0.5)');
+      g.addColorStop(1, 'rgba(242,237,225,0)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, SP, SP);
+    }
+
+    function build() {
+      const cap = coarse.matches ? 260 : 620;
+      const n = Math.max(120, Math.min(cap, Math.round((w * h) / 3200)));
+      const r = rng(20260902); // fixed seed: the background never reshuffles
+      field = [];
+      for (let i = 0; i < n; i++) {
+        field.push({
+          x: r(),
+          y: r(),
+          s: 0.5 + r() * 1.4,
+          a: 0.14 + r() * 0.4,
+          tw: 0.3 + r() * 1.4,
+          ph: r() * 6.283,
+          d: 8 + r() * 40,
+        });
+      }
+    }
+
+    /* Real content always wins the pointer. Anything else is open sky, which
+       is most of a page whose layout containers span the whole viewport. */
+    const CONTENT =
+      'a, button, input, textarea, select, summary, label, h1, h2, h3, h4, p, li,' +
+      ' figcaption, code, span, time, dt, dd, img, svg, pre, blockquote, table';
+
+    const skyAt = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y);
+      return !el || !el.closest(CONTENT);
+    };
+
+    /*
+     * Constellations have to land on open sky, and what counts as open sky
+     * differs on every page: the home page has a full-width nameplate across
+     * the bottom, a legal page has a text sheet down the middle. Rather than
+     * hard-coding exclusion zones per layout, each constellation probes a
+     * fixed sequence of offsets after layout and takes the first free one.
+     * The sequence is fixed, so the result is still deterministic.
+     */
+    const PROBE: [number, number][] = [
+      [0, 0], [0, -0.09], [0.14, -0.05], [-0.14, -0.05], [0, -0.18],
+      [0.22, -0.12], [-0.22, -0.12], [0.3, 0.04], [-0.3, 0.04], [0, -0.26],
+    ];
+
+    /* A constellation is only clear if its whole footprint is, not just its
+       centre: the centroid can sit in a gap while the arms cross a column of
+       text. Five samples across the shape is enough to catch that. */
+    function footprintClear(x: number, y: number) {
+      const s = spread * 0.7;
+      return (
+        skyAt(x, y) &&
+        skyAt(x - s, y) &&
+        skyAt(x + s, y) &&
+        skyAt(x, y - s * 0.75) &&
+        skyAt(x, y + s * 0.75)
+      );
+    }
+
+    function reposition() {
+      for (const g of groups) {
+        g.hx = g.ax;
+        g.hy = g.ay;
+        let placed = false;
+        // First pass: demand a completely clear footprint.
+        for (const [dx, dy] of PROBE) {
+          const nx = Math.min(0.93, Math.max(0.07, g.ax + dx));
+          const ny = Math.min(0.88, Math.max(0.1, g.ay + dy));
+          if (footprintClear(nx * w, ny * h)) {
+            g.hx = nx;
+            g.hy = ny;
+            placed = true;
+            break;
+          }
+        }
+        // Fallback on a crowded page: a free centre is better than nothing,
+        // because the centre is what the pointer is tested against.
+        if (!placed) {
+          for (const [dx, dy] of PROBE) {
+            const nx = Math.min(0.93, Math.max(0.07, g.ax + dx));
+            const ny = Math.min(0.88, Math.max(0.1, g.ay + dy));
+            if (skyAt(nx * w, ny * h)) {
+              g.hx = nx;
+              g.hy = ny;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    /*
+     * Fraction of the display's pixels the sky is drawn at. One at rest; less
+     * during a warp, where the whole field is stretched into blurred streaks
+     * and the detail is spent on something nobody can resolve. On a dense
+     * screen this canvas is around seven megapixels, cleared and repainted
+     * every frame, so two thirds of the width and height is well over half the
+     * pixel work saved at the exact moment the frame budget is tightest.
+     */
+    let raster = 1;
+
+    function sizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2) * raster;
+      canvas!.width = Math.round(w * dpr);
+      canvas!.height = Math.round(h * dpr);
+      // Resizing a canvas resets its context, transform and all.
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = 'lighter';
+    }
+
+    function setRaster(next: number) {
+      if (next === raster) return;
+      raster = next;
+      sizeCanvas();
+      // Resizing empties the canvas, so fill it again now rather than risk a
+      // blank frame if the loop's turn comes after this one.
+      draw(performance.now());
+    }
+
+    function resize() {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      spread = Math.min(w, h) * (coarse.matches ? 0.16 : 0.13);
+      sizeCanvas();
+      build();
+      reposition();
+      draw(0);
+    }
+
+    function draw(t: number) {
+      const still = reduce.matches;
+      const time = still ? 0 : t / 1000;
+      ctx.clearRect(0, 0, w, h);
+
+      /* --- field --- */
+      ctx.globalCompositeOperation = 'lighter';
+      const cx = w / 2;
+      const cy = h / 2;
+      const streaking = warp > 0.01;
+      for (const lane of streaks) lane.length = 0;
+
+      for (const s of field) {
+        // Six hundred sines a frame buy a twinkle nobody can see once the
+        // field is streaking past, so the warp does without it.
+        const flick =
+          still || streaking ? 1 : 0.74 + 0.26 * Math.sin(time * s.tw + s.ph);
+        // Mirrored from the cockpit, parallax included: looking at the same
+        // sky from the other side reverses which way it slides.
+        const xf = s.x * w + px * s.d;
+        const x = behind ? w - xf : xf;
+        const y = s.y * h + py * s.d - scrollY * 0.03;
+        const yy = ((y % (h + 160)) + h + 160) % (h + 160) - 80;
+        const d = s.s * 4;
+
+        if (streaking) {
+          /*
+           * Warp: each star becomes a streak pointing away from the middle of
+           * the screen, longer the further out it already is. Stars near the
+           * centre barely move, which is what sells the sense of flying into
+           * it rather than the field simply sliding.
+           *
+           * Only the geometry is worked out here. Drawing is left to the end
+           * because there can be six hundred of these: the first version gave
+           * every one its own gradient object and its own stroke call, which
+           * is tens of thousands of allocations a second and six hundred draws
+           * a frame, and it was what made the warp stutter.
+           */
+          const dx = x - cx;
+          const dy = yy - cy;
+          const stretch = warp * warp * 1.9;
+          const ex = x + dx * stretch;
+          const ey = yy + dy * stretch;
+
+          if (Math.abs(ex - x) + Math.abs(ey - yy) > 1.2) {
+            const a = Math.min(1, s.a * flick * (1 + warp));
+            const bucket = Math.min(WARP_TONES - 1, (a * WARP_TONES) | 0);
+            const lane = streaks[bucket]!;
+            lane.push(x, yy, ex, ey);
+            continue;
+          }
+          // Too near the middle to have moved: still a star, not a streak.
+        }
+
+        ctx.globalAlpha = s.a * flick;
+        ctx.drawImage(sprite, x - d / 2, yy - d / 2, d, d);
+      }
+
+      if (streaking) {
+        /*
+         * Every streak of one brightness in a single path, and the whole field
+         * in ten stroke calls rather than six hundred. Two passes stand in for
+         * the gradient the streaks used to carry: the full length faint, then
+         * the leading stretch bright, which reads as a tail without costing a
+         * gradient per star.
+         */
+        ctx.strokeStyle = 'rgb(242,237,225)';
+        ctx.lineCap = 'round';
+        for (let pass = 0; pass < 2; pass++) {
+          const head = pass === 1;
+          ctx.lineWidth = head ? 1.15 : 0.75;
+          for (let b = 0; b < WARP_TONES; b++) {
+            const lane = streaks[b]!;
+            if (!lane.length) continue;
+            ctx.globalAlpha = ((b + 0.5) / WARP_TONES) * (head ? 1 : 0.42);
+            ctx.beginPath();
+            for (let i = 0; i < lane.length; i += 4) {
+              const sx = lane[i]!;
+              const sy = lane[i + 1]!;
+              const tx = lane[i + 2]!;
+              const ty = lane[i + 3]!;
+              ctx.moveTo(sx, sy);
+              if (head) ctx.lineTo(sx + (tx - sx) * 0.45, sy + (ty - sy) * 0.45);
+              else ctx.lineTo(tx, ty);
+            }
+            ctx.stroke();
+          }
+        }
+      }
+
+      /* --- constellations --- */
+      const chartFade = behind ? 0 : 1 - Math.min(1, warp * 1.6);
+      for (let gi = 0; gi < groups.length && chartFade > 0.01; gi++) {
+        const g = groups[gi]!;
+        const target = gi === hover || g.slug === activeSlug ? 1 : 0;
+        g.lit += (target - g.lit) * (still ? 1 : 0.12);
+
+        const base = STATUS_ALPHA[g.status] * chartFade;
+        const gx = g.hx * w + px * 30;
+        const gy = g.hy * h + py * 30 - scrollY * 0.06;
+        g.cx = gx;
+        g.cy = gy;
+
+        for (const n of g.nodes) {
+          n.x = gx + n.ox * spread;
+          n.y = gy + n.oy * spread;
+        }
+
+        // Lines first, under the stars.
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = g.accent;
+        // Legible at rest, and still clearly brighter under the pointer.
+        ctx.globalAlpha = base * (0.26 + g.lit * 0.5);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(g.nodes[0]!.x, g.nodes[0]!.y);
+        for (let i = 1; i < g.nodes.length; i++) ctx.lineTo(g.nodes[i]!.x, g.nodes[i]!.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.globalCompositeOperation = 'lighter';
+        for (const n of g.nodes) {
+          const d = n.r * (3.9 + g.lit * 1.9);
+          ctx.globalAlpha = Math.min(1, n.a * base * (0.8 + g.lit * 0.55));
+          ctx.drawImage(sprite, n.x - d / 2, n.y - d / 2, d, d);
+        }
+
+        if (g.lit > 0.03) {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = g.lit;
+          ctx.fillStyle = '#f2ede1';
+          ctx.font = '500 13px "IBM Plex Mono", ui-monospace, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(g.name.toUpperCase(), gx, gy + spread * 0.95);
+        }
+      }
+
+      /* --- shooting stars --- */
+      if (!still) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = shots.length - 1; i >= 0; i--) {
+          const s = shots[i]!;
+          s.x += s.vx;
+          s.y += s.vy;
+          s.life -= 0.013;
+          if (s.life <= 0 || s.x < -260 || s.x > w + 260 || s.y > h + 160) {
+            shots.splice(i, 1);
+            continue;
+          }
+          const nx = s.x - s.vx * 11;
+          const ny = s.y - s.vy * 11;
+          const grad = ctx.createLinearGradient(s.x, s.y, nx, ny);
+          const a = Math.min(1, s.life * 1.5);
+          grad.addColorStop(0, `rgba(242,237,225,${a})`);
+          grad.addColorStop(1, 'rgba(242,237,225,0)');
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(nx, ny);
+          ctx.stroke();
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    function frame(t: number) {
+      px += (tx - px) * 0.05;
+      py += (ty - py) * 0.05;
+      if (t > nextShot) {
+        const left = Math.random() > 0.4;
+        shots.push({
+          x: left ? -60 : w + 60,
+          y: Math.random() * h * 0.5,
+          vx: (left ? 1 : -1) * (7 + Math.random() * 6),
+          vy: 3 + Math.random() * 3,
+          life: 1,
+        });
+        nextShot = t + 6000 + Math.random() * 12000;
+      }
+      draw(t);
+      raf = requestAnimationFrame(frame);
+    }
+
+    const start = () => {
+      if (running || reduce.matches) return;
+      running = true;
+      nextShot = performance.now() + 2500;
+      raf = requestAnimationFrame(frame);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+
+    /* --- interaction ------------------------------------------------------
+       Hit testing runs against the positions actually drawn this frame, so the
+       target never drifts away from the parallax offset. */
+    function pick(cx: number, cy: number) {
+      let best = -1;
+      let bestD = spread * 1.15;
+      for (let i = 0; i < groups.length; i++) {
+        const g = groups[i]!;
+        const d = Math.hypot(g.cx - cx, g.cy - cy);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      return best;
+    }
+
+    function setHover(i: number) {
+      if (i === hover) return;
+      hover = i;
+      // The cursor hint goes on the root, because the canvas cannot receive
+      // pointer events at all.
+      document.documentElement.toggleAttribute('data-sky-hot', i >= 0);
+      canvas!.toggleAttribute('data-hot', i >= 0);
+      if (reduce.matches) draw(0);
+    }
+
+    if (!coarse.matches) {
+      window.addEventListener(
+        'pointermove',
+        (e) => {
+          tx = (e.clientX / w - 0.5) * 2;
+          ty = (e.clientY / h - 0.5) * 2;
+          // From the cockpit the constellations are not drawn, so they must
+          // not be pickable either: the world behind is pointer-transparent,
+          // and every stray click would otherwise navigate to an app page.
+          setHover(!behind && skyAt(e.clientX, e.clientY) ? pick(e.clientX, e.clientY) : -1);
+        },
+        { passive: true },
+      );
+
+      window.addEventListener('click', (e) => {
+        if (behind || hover < 0 || !skyAt(e.clientX, e.clientY)) return;
+        const i = pick(e.clientX, e.clientY);
+        if (i >= 0) window.location.href = groups[i]!.href;
+      });
+    }
+
+    /* The ship drives the warp; the chart only renders it. */
+    document.addEventListener('warp', (e) => {
+      const detail = (e as CustomEvent).detail ?? {};
+      warp = Math.max(0, Math.min(1, detail.amount ?? 0));
+      setRaster(warp > 0.01 ? 0.66 : 1);
+      if (behind !== !!detail.behind) {
+        behind = !!detail.behind;
+        // Whatever was lit belongs to the front of the site. Drop it, or the
+        // cursor keeps claiming a constellation nobody can see any more.
+        setHover(-1);
+      }
+      if (!running) draw(performance.now());
+    });
+
+    resize();
+    if (document.fonts?.ready) document.fonts.ready.then(() => { reposition(); draw(0); });
+    window.addEventListener('resize', resize, { passive: true });
+    window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+    reduce.addEventListener('change', () => {
+      stop();
+      reduce.matches ? draw(0) : start();
+    });
+
+    start();
+  }
+</script>

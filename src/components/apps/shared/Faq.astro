@@ -1,0 +1,76 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { App } from '~/utils/apps';
+
+export interface Props {
+  faq: App['data']['faq'];
+  headingId: string;
+}
+
+const { faq, headingId } = Astro.props;
+---
+
+{
+  faq.length > 0 && (
+    <section class="section section--tight section-divider" aria-labelledby={headingId}>
+      <div class="wrap">
+        <h2 id={headingId}>Questions</h2>
+        <div class="faq">
+          {faq.map((item) => (
+            <details class="faq__item">
+              <summary class="faq__summary">
+                <span>{item.q}</span>
+                <Icon name="ph:plus" class="faq__marker" aria-hidden="true" />
+              </summary>
+              <p class="faq__answer">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .faq {
+    margin-block-start: var(--space-l);
+    border-top: var(--border) solid var(--line);
+    max-width: var(--wrap-narrow);
+  }
+
+  .faq__item { border-bottom: var(--border) solid var(--line); }
+
+  .faq__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    padding-block: var(--space-m);
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 550;
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .faq__summary::-webkit-details-marker { display: none; }
+
+  .faq__summary:hover { color: var(--ink); }
+
+  .faq__marker {
+    flex: none;
+    font-size: 1.25rem;
+    color: var(--ink-faint);
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .faq__item[open] .faq__marker { transform: rotate(45deg); }
+
+  .faq__answer {
+    margin: 0;
+    padding-block-end: var(--space-m);
+    color: var(--ink-muted);
+    max-width: 58ch;
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+import type { GetStaticPaths } from 'astro';
+import LegalDocument from '~/components/site/LegalDocument.astro';
+import { getApps, getLegalRefs } from '~/utils/apps';
+import { siteConfig } from '~/config/site';
+
+/**
+ * /apps/<slug>/<locale>/privacy for every language other than the default.
+ * The default language keeps the shorter /apps/<slug>/privacy address so the
+ * URL already submitted to a store never has to change.
+ */
+export const getStaticPaths = (async () => {
+  const apps = await getApps();
+  const refs = await getLegalRefs();
+
+  return apps.flatMap((app) => {
+    const siblings = refs.filter((r) => r.scope === app.id);
+    return siblings
+      .filter((r) => r.locale !== siteConfig.defaultLocale)
+      .map((doc) => ({
+        params: { slug: app.id, locale: doc.locale, doc: doc.kind },
+        props: { doc, siblings, app },
+      }));
+  });
+}) satisfies GetStaticPaths;
+
+const { doc, siblings, app } = Astro.props;
+---
+
+<LegalDocument doc={doc} siblings={siblings} app={app} />

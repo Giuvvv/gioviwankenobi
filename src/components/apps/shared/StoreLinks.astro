@@ -1,0 +1,82 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { App } from '~/utils/apps';
+
+export interface Props {
+  links: App['data']['links'];
+  /** The first link uses the filled treatment. */
+  emphasiseFirst?: boolean;
+}
+
+const { links, emphasiseFirst = true } = Astro.props;
+
+const CANDIDATES = [
+  { key: 'appStore', label: 'App Store', icon: 'ph:apple-logo' },
+  { key: 'googlePlay', label: 'Google Play', icon: 'ph:google-play-logo' },
+  { key: 'testFlight', label: 'TestFlight', icon: 'ph:paper-plane-tilt' },
+  { key: 'website', label: 'Website', icon: 'ph:arrow-square-out' },
+  { key: 'github', label: 'Source', icon: 'ph:github-logo' },
+] as const;
+
+const entries = CANDIDATES.map((c) => ({
+  ...c,
+  href: links[c.key],
+})).filter((c): c is typeof c & { href: string } => typeof c.href === 'string');
+
+const real = entries.filter((e) => !e.href.includes('TODO_'));
+const pending = entries.filter((e) => e.href.includes('TODO_'));
+---
+
+{
+  (real.length > 0 || pending.length > 0) && (
+    <div class="store-links">
+      {real.map((entry, index) => (
+        <a
+          class:list={['btn', emphasiseFirst && index === 0 ? 'btn--on-accent' : null]}
+          href={entry.href}
+          rel="noopener"
+        >
+          <Icon name={entry.icon} aria-hidden="true" />
+          {entry.label}
+        </a>
+      ))}
+
+      {/* A store URL that has not been filled in yet is shown as pending
+          rather than rendered as a link that goes nowhere. */}
+      {pending.map((entry) => (
+        <span class="store-links__pending">
+          <Icon name={entry.icon} aria-hidden="true" />
+          {entry.label}
+          <span class="store-links__note">link pending</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+<style>
+  .store-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+  }
+
+  .store-links__pending {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    padding: 0.7em 1.35em;
+    border: var(--border) dashed var(--line-strong);
+    font-size: var(--step--1);
+    font-weight: 550;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  .store-links__note {
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+  }
+</style>

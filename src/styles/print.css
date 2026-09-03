@@ -1,0 +1,45 @@
+/* Legal documents get submitted, printed and archived. Make that work. */
+@media print {
+  :root {
+    --void: #fff;
+    --paper: #fff;
+    --paper-sunk: #fff;
+    --ink: #000;
+    --ink-muted: #1a1a1a;
+    --ink-faint: #444;
+    --line: #bbb;
+    --line-strong: #888;
+    --plate: transparent;
+  }
+
+  body { background: #fff !important; }
+
+  /* Glass has no meaning on paper. */
+  .plate { background: transparent !important; border-color: #bbb !important; box-shadow: none !important; }
+
+  .site-header,
+  .site-footer,
+  .skip-link,
+  .sky,
+  .cursor,
+  .toc { display: none !important; }
+
+  body { font-size: 11pt; line-height: 1.5; }
+
+  .prose { max-width: none; }
+
+  .prose h2,
+  .prose h3 { break-after: avoid; }
+
+  .prose p,
+  .prose li { orphans: 3; widows: 3; }
+
+  /* Print the destination of links so a paper copy stays useful. */
+  .prose a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 9pt;
+    word-break: break-all;
+  }
+
+  .legal-head { border-bottom: 1pt solid #000; padding-bottom: 8pt; }
+}

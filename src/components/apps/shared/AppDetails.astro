@@ -1,0 +1,93 @@
+---
+import { Icon } from 'astro-icon/components';
+import { formatDate, isoDate, languageName } from '~/utils/format';
+import { mailto, realAddress } from '~/utils/contact';
+import { supportEmail as siteSupport } from '~/config/site';
+import type { App } from '~/utils/apps';
+
+export interface Props {
+  app: App;
+  headingId: string;
+}
+
+const { app, headingId } = Astro.props;
+const { data } = app;
+
+const support = data.links.supportEmail ?? siteSupport;
+const supportHref = mailto(support, `${data.name} support`);
+const supportLabel = realAddress(support);
+
+const facts = [
+  {
+    term: 'Languages',
+    value: data.languages.map((tag) => languageName(tag)).join(', '),
+  },
+  data.released && {
+    term: 'First released',
+    value: formatDate(data.released),
+    dateTime: isoDate(data.released),
+  },
+  data.updated && {
+    term: 'Last updated',
+    value: formatDate(data.updated),
+    dateTime: isoDate(data.updated),
+  },
+].filter((f): f is { term: string; value: string; dateTime?: string } => Boolean(f));
+---
+
+<section class="section section--tight section-divider" aria-labelledby={headingId}>
+  <div class="wrap">
+    <h2 id={headingId}>Details</h2>
+
+    <dl class="details">
+      {
+        facts.map((fact) => (
+          <div class="details__cell">
+            <dt class="label">{fact.term}</dt>
+            <dd>
+              {fact.dateTime ? (
+                <time datetime={fact.dateTime}>{fact.value}</time>
+              ) : (
+                fact.value
+              )}
+            </dd>
+          </div>
+        ))
+      }
+
+      <div class="details__cell">
+        <dt class="label">Support</dt>
+        <dd>
+          {
+            supportHref && supportLabel ? (
+              <a class="link link--quiet" href={supportHref}>
+                {supportLabel}
+                <Icon name="ph:arrow-up-right" aria-hidden="true" />
+              </a>
+            ) : (
+              <span class="details__pending">Contact address pending</span>
+            )
+          }
+        </dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<style>
+  .details {
+    margin: var(--space-l) 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: var(--space-l) var(--space-m);
+  }
+
+  .details__cell dd {
+    margin: var(--space-3xs) 0 0;
+    font-size: var(--step-0);
+  }
+
+  .details__cell :global(svg) { margin-inline-start: 0.15em; }
+
+  .details__pending { color: var(--ink-faint); }
+</style>

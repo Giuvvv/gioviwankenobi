@@ -1,0 +1,138 @@
+/* =========================================================================
+   Design tokens.
+
+   The site is one dark environment: the ground is a night sky drawn as an old
+   celestial chart, and every app in the catalogue is a real constellation on
+   it. Warm ink rather than blue, bone-white stars, one aged-gold accent.
+   Surfaces are plates, not plate: solid, hairline-bordered, barely rounded.
+
+   There is no light theme, because a star chart has no sensible light
+   counterpart. Printing is handled separately in print.css.
+
+   App pages rebind --accent / --accent-ink to their own colour. Nothing else
+   in the system changes, which is what keeps the site coherent while each app
+   still gets its own room.
+   ========================================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* --- Type families ------------------------------------------------- */
+  --font-display: 'Sora Variable', 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Instrument Sans Variable', 'Instrument Sans', ui-sans-serif,
+    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Mono',
+    monospace;
+
+  /* --- Fluid type scale (320px -> 1440px) ---------------------------- */
+  --step--2: clamp(0.694rem, 0.68rem + 0.07vw, 0.738rem);
+  --step--1: clamp(0.833rem, 0.81rem + 0.12vw, 0.885rem);
+  --step-0: clamp(1rem, 0.96rem + 0.19vw, 1.063rem);
+  --step-1: clamp(1.2rem, 1.14rem + 0.3vw, 1.4rem);
+  --step-2: clamp(1.44rem, 1.34rem + 0.5vw, 1.8rem);
+  --step-3: clamp(1.728rem, 1.56rem + 0.84vw, 2.3rem);
+  --step-4: clamp(2.074rem, 1.8rem + 1.37vw, 3rem);
+  --step-5: clamp(2.488rem, 2.04rem + 2.24vw, 4rem);
+  --step-6: clamp(2.986rem, 2.24rem + 3.72vw, 5.5rem);
+  /* Hero nameplate.
+     "gioviwankenobi" in Sora 600 at the plate tracking measures 7.79x its font
+     size (Bricolage was 7.09, so this is not transferable between faces).
+     10.6vw holds one line from 320px up with a few px of margin at every
+     width, and the cap is what fills the content column at --wrap.
+     Re-measure if the name, the display face or --wrap ever changes. */
+  --step-plate: clamp(2rem, 10.6vw, 8.6rem);
+
+  --leading-tight: 0.95;
+  --leading-snug: 1.15;
+  --leading-normal: 1.6;
+  --leading-loose: 1.75;
+
+  --tracking-plate: -0.035em;
+  --tracking-tight: -0.02em;
+  --tracking-label: 0.16em;
+
+  /* --- Space scale ---------------------------------------------------- */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: 2.5rem;
+  --space-xl: 4rem;
+  --space-2xl: clamp(3.5rem, 2.7rem + 4vw, 6rem);
+  --space-section: clamp(6rem, 4rem + 9vw, 12rem);
+
+  /* --- Layout --------------------------------------------------------- */
+  --wrap: 78rem;
+  --wrap-narrow: 58rem;
+  --wrap-text: 38rem;
+  --measure: 66ch;
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+  --header-height: 4.25rem;
+
+  /* --- Shape -----------------------------------------------------------
+     Nearly square. Plates and controls share one small radius so nothing on
+     the site reads as a floating pill. App icons keep the radius their own
+     platform gives them. */
+  --radius: 4px;
+  --radius-sm: 3px;
+  --radius-pill: 4px;
+  --radius-icon: 22.37%;
+  --border: 1px;
+  --border-strong: 2px;
+
+  /* --- Motion ---------------------------------------------------------- */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur: 320ms;
+  --dur-slow: 700ms;
+  --dur-reveal: 1000ms;
+
+  /* --- Layers ----------------------------------------------------------
+     The complete z-index scale. Nothing outside this list gets a z-index. */
+  --z-sky: 0;
+  --z-base: 1;
+  --z-raised: 2;
+  --z-header: 100;
+  --z-cursor: 150;
+  --z-skiplink: 200;
+
+  /* --- Colour ----------------------------------------------------------
+     Warm ink, not blue. The ground carries a brown-green cast the way an aged
+     plate does, so the field reads as printed night rather than as outer
+     space. Stars are bone; the one accent is aged gold. */
+  --void: #0b0a08;
+  --night: #131109;
+  --deep: #17140f;
+
+  --paper: var(--void);
+  --paper-sunk: #100e0b;
+  --paper-raised: #16130f;
+
+  --ink: #f2ede1;
+  --ink-muted: #a89e8d;
+  --ink-faint: #71695c;
+
+  --line: rgba(242, 237, 225, 0.11);
+  --line-strong: rgba(242, 237, 225, 0.24);
+
+  /* One accent. App pages rebind it to their own colour. */
+  --accent: #e9a93c;
+  --accent-ink: #0b0a08;
+  /* Reserved for real states, never for decoration. */
+  --accent-dim: #8a7a5a;
+  --accent-alert: #c4553a;
+
+  --plate: rgba(22, 19, 15, 0.86);
+  --plate-strong: rgba(30, 26, 20, 0.94);
+  --blur: 10px;
+
+  --selection-bg: var(--accent);
+  --selection-fg: #0b0a08;
+}
+
+/* Coarse pointers get no pointer ring and cheaper blur. */
+@media (pointer: coarse) {
+  :root { --blur: 6px; }
+}

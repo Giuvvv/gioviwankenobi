@@ -1,0 +1,124 @@
+/* Long-form typography for legal documents and the About page.
+   Calm on purpose: these pages are read, printed and submitted to app stores. */
+
+.prose {
+  max-width: var(--measure);
+  font-size: var(--step-0);
+  line-height: var(--leading-loose);
+  color: var(--ink-muted);
+}
+
+.prose > * + * { margin-block-start: var(--space-m); }
+
+.prose h2 {
+  font-size: var(--step-2);
+  color: var(--ink);
+  margin-block-start: var(--space-xl);
+  padding-block-start: var(--space-s);
+  border-top: var(--border) solid var(--line);
+  scroll-margin-top: calc(var(--header-height) + var(--space-l));
+}
+
+.prose h3 {
+  font-size: var(--step-1);
+  color: var(--ink);
+  margin-block-start: var(--space-l);
+  scroll-margin-top: calc(var(--header-height) + var(--space-l));
+}
+
+.prose h2:first-child,
+.prose h3:first-child { margin-block-start: 0; }
+
+.prose a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+}
+
+.prose a:hover { color: #fff; text-decoration-color: var(--ink); }
+
+.prose ul,
+.prose ol {
+  padding-inline-start: 1.4em;
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.prose li::marker { color: var(--ink-faint); }
+
+.prose strong { color: var(--ink); font-weight: 600; }
+
+.prose blockquote {
+  border-left: var(--border-strong) solid var(--line-strong);
+  padding-inline-start: var(--space-m);
+  color: var(--ink-faint);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.prose th,
+.prose td {
+  text-align: left;
+  padding: var(--space-2xs) var(--space-s) var(--space-2xs) 0;
+  border-bottom: var(--border) solid var(--line);
+  vertical-align: top;
+}
+
+.prose th { color: var(--ink); font-weight: 600; }
+
+/* Table of contents for long documents. */
+.toc {
+  border-top: var(--border) solid var(--line);
+  border-bottom: var(--border) solid var(--line);
+  padding-block: var(--space-m);
+}
+
+.toc ol {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-xs) 0 0;
+  display: grid;
+  gap: var(--space-3xs);
+  font-size: var(--step--1);
+}
+
+.toc a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-bottom: var(--border) solid transparent;
+}
+
+.toc a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* Callouts, carried over from the source documents. They mark the sentences
+   the author wanted read even by someone skimming, so they stay visually
+   distinct without shouting. */
+.prose .callout {
+  margin-block: var(--space-m);
+  padding: var(--space-s) var(--space-m);
+  border: var(--border) solid var(--line);
+  border-left: var(--border-strong) solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--plate);
+}
+
+.prose .callout > * + * { margin-block-start: var(--space-2xs); }
+
+.prose .callout__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.prose .callout[data-kind='warning'] { border-left-color: var(--accent-alert); }
+.prose .callout p { font-size: var(--step--1); }
+
+/* Tables in a policy are dense and often wide. */
+.prose .table-scroll, .prose table { display: block; overflow-x: auto; }

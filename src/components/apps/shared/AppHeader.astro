@@ -1,0 +1,137 @@
+---
+import { Icon } from 'astro-icon/components';
+import { PLATFORMS, STATUS } from '~/config/platforms';
+import type { App } from '~/utils/apps';
+import AppIcon from './AppIcon.astro';
+import StoreLinks from './StoreLinks.astro';
+
+export interface Props { app: App }
+
+const { app } = Astro.props;
+const { data } = app;
+const platformLabels = data.platforms.map((p) => PLATFORMS[p].label).join(', ');
+---
+
+<header class="app-header">
+  <div class="wrap">
+    <div class="app-header__rule"></div>
+
+    {
+      data.isDemo && (
+        <p class="notice app-header__demo">
+          <strong>Demo entry.</strong> {data.name} is placeholder content used to
+          show how an app is published on this site. It is not a real product.
+        </p>
+      )
+    }
+
+    <div class="app-header__grid">
+      <div class="app-header__main">
+        <AppIcon src={data.icon} name={data.name} size={88} loading="eager" />
+        <h1 class="app-header__name">{data.name}</h1>
+        <p class="app-header__tagline">{data.tagline}</p>
+        <p class="app-header__summary">{data.summary}</p>
+        <StoreLinks links={data.links} />
+      </div>
+
+      <dl class="app-header__facts">
+        <div>
+          <dt class="label">Status</dt>
+          <dd><span class="status" data-status={data.status}>{STATUS[data.status].label}</span></dd>
+        </div>
+        <div>
+          <dt class="label">Platforms</dt>
+          <dd class="app-header__platforms">
+            <span class="visually-hidden">{platformLabels}</span>
+            {
+              data.platforms.map((p) => (
+                <Icon name={PLATFORMS[p].icon} title={PLATFORMS[p].label} aria-hidden="true" />
+              ))
+            }
+          </dd>
+        </div>
+        {
+          data.version && (
+            <div>
+              <dt class="label">Version</dt>
+              <dd class="meta">{data.version}</dd>
+            </div>
+          )
+        }
+      </dl>
+    </div>
+  </div>
+</header>
+
+<style>
+  .app-header {
+    padding-block: var(--space-l) var(--space-xl);
+  }
+
+  /* The app's colour states itself once, at the top of its own page. */
+  .app-header__rule {
+    height: 4px;
+    background-color: var(--accent);
+    margin-block-end: var(--space-xl);
+  }
+
+  .app-header__demo { margin-block-end: var(--space-xl); max-width: 62ch; }
+
+  .app-header__grid {
+    display: grid;
+    gap: var(--space-xl);
+  }
+
+  @media (min-width: 56rem) {
+    .app-header__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(9rem, 14rem);
+      gap: var(--space-2xl);
+      align-items: start;
+    }
+  }
+
+  .app-header__main { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-s); }
+
+  .app-header__name {
+    font-size: var(--step-5);
+    line-height: 1;
+    margin-block-start: var(--space-2xs);
+  }
+
+  .app-header__tagline {
+    font-size: var(--step-2);
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.2;
+    color: var(--ink-muted);
+    max-width: 22ch;
+  }
+
+  .app-header__summary {
+    color: var(--ink-muted);
+    max-width: 52ch;
+    margin-block-end: var(--space-s);
+  }
+
+  .app-header__facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: var(--space-m);
+    margin: 0;
+    padding-block-start: var(--space-s);
+    border-top: var(--border) solid var(--line);
+  }
+
+  @media (min-width: 56rem) {
+    .app-header__facts { grid-template-columns: 1fr; gap: var(--space-m); }
+  }
+
+  .app-header__facts dd { margin: 0; margin-block-start: var(--space-3xs); }
+
+  .app-header__platforms {
+    display: flex;
+    gap: var(--space-2xs);
+    font-size: 1.25rem;
+    color: var(--ink-muted);
+  }
+</style>

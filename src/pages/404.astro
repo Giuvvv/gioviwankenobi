@@ -1,0 +1,78 @@
+---
+import { Icon } from 'astro-icon/components';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { url } from '~/utils/paths';
+---
+
+<BaseLayout title="Page not found" noindex>
+  <section class="notfound">
+    <div class="wrap">
+      <p class="notfound__code">404</p>
+      <h1 class="notfound__title">This address does not exist</h1>
+      <p class="notfound__path meta" data-notfound-path hidden></p>
+      <p class="notfound__body">
+        If you followed a link from inside an app, the app is pointing at an old
+        address. Every policy on this site keeps a permanent URL, so this is
+        worth reporting.
+      </p>
+
+      <p class="notfound__actions">
+        <a class="btn btn--primary" href={url()}>
+          Home<Icon name="ph:arrow-right" aria-hidden="true" />
+        </a>
+        <a class="btn" href={url('/apps')}>Browse apps</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  // Show the address that was actually requested. textContent only.
+  const target = document.querySelector<HTMLElement>('[data-notfound-path]');
+  if (target) {
+    target.textContent = window.location.pathname;
+    target.hidden = false;
+  }
+</script>
+
+<style>
+  .notfound { padding-block: clamp(var(--space-xl), 10vw, 7rem) var(--space-section); }
+
+  .notfound__code {
+    font-family: var(--font-display);
+    font-size: var(--step-6);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: var(--tracking-plate);
+    display: inline-block;
+    color: #fff;
+    text-shadow:
+      0 0 24px color-mix(in srgb, var(--accent) 70%, transparent),
+      0 0 80px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .notfound__title {
+    margin-block-start: var(--space-m);
+    font-size: var(--step-4);
+    max-width: 16ch;
+  }
+
+  .notfound__path {
+    margin-block-start: var(--space-s);
+    color: var(--ink-faint);
+    word-break: break-all;
+  }
+
+  .notfound__body {
+    margin-block-start: var(--space-m);
+    color: var(--ink-muted);
+    max-width: 48ch;
+  }
+
+  .notfound__actions {
+    margin-block-start: var(--space-xl);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+  }
+</style>

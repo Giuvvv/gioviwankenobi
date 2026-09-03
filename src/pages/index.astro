@@ -1,0 +1,295 @@
+---
+import { Icon } from 'astro-icon/components';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Wordmark from '~/components/site/Wordmark.astro';
+import AppShowcase from '~/components/apps/shared/AppShowcase.astro';
+import { getApps } from '~/utils/apps';
+import { siteConfig, activeSocials, supportEmail } from '~/config/site';
+import { url, siteRoot } from '~/utils/paths';
+import { mailto, realAddress } from '~/utils/contact';
+
+const apps = await getApps();
+
+const contactHref = mailto(supportEmail);
+const contactLabel = realAddress(supportEmail);
+
+const home = siteRoot(Astro.site ?? Astro.url.origin);
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteConfig.name,
+    url: home,
+    description: siteConfig.description,
+    inLanguage: siteConfig.defaultLocale,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: siteConfig.name,
+    url: home,
+    ...(activeSocials.length > 0 ? { sameAs: activeSocials.map((s) => s.href) } : {}),
+  },
+];
+---
+
+<BaseLayout title={siteConfig.name} schema={schema}>
+  <section class="hero" data-hero>
+    <div class="wrap hero__grid">
+      <p class="hero__caption label">
+        Every constellation is an app.<span class="hero__caption-hint"> Hover one.</span>
+      </p>
+
+      <div class="hero__name">
+        <Wordmark variant="plate" as="h1" />
+      </div>
+
+      <div class="hero__foot">
+        {/* Broken by hand: the two sentences are within a character of the
+            same length, so the pair reads as deliberate rather than as a line
+            that happened to run out of room. Both fit on one line down to
+            about 300px, so the break holds at every width. */}
+        <p class="hero__lead">
+          Independent software developer.<br />I build only apps that I need.
+        </p>
+        <a class="scroller" href="#projects">
+          <span class="scroller__rail"><span class="scroller__spark"></span></span>
+          <span class="scroller__word">Scroll</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section projects" id="projects" aria-labelledby="projects-title">
+    <div class="wrap">
+      <header class="projects__head">
+        <p class="label reveal">Selected work</p>
+        <h2 id="projects-title" class="projects__title reveal" style="--reveal-delay:80ms">
+          Things I have built<span class="dot">.</span>
+        </h2>
+        <p class="lede reveal" style="--reveal-delay:160ms">
+          Each one has its own page, its own downloads and its own policies.
+        </p>
+      </header>
+    </div>
+
+    {
+      apps.length > 0 ? (
+        <div class="wrap">
+          {apps.map((app, i) => (
+            <AppShowcase app={app} reverse={i % 2 === 1} eager={i === 0} />
+          ))}
+        </div>
+      ) : (
+        <div class="wrap">
+          <div class="plate empty reveal">
+            <h3>Nothing published yet</h3>
+            <p>
+              The catalogue is empty. The first project appears here as soon as its entry
+              lands in <code>src/content/apps/</code>.
+            </p>
+          </div>
+        </div>
+      )
+    }
+  </section>
+
+  <section class="section--tight closing" id="about-excerpt" aria-labelledby="about-title">
+    <div class="wrap">
+      <div class="closing__panel plate reveal">
+        <h2 id="about-title" class="closing__title">
+          One person, building software on their own terms<span class="dot">.</span>
+        </h2>
+        <p class="closing__body">
+          Some of it ships to a store, some of it stays an experiment. The longer version,
+          and everything about how to get in touch, lives on the about page.
+        </p>
+        <p class="closing__actions">
+          <a class="btn btn--primary" href={url('/about')}>
+            About<Icon name="ph:arrow-right" aria-hidden="true" />
+          </a>
+          {
+            contactHref && contactLabel ? (
+              <a class="btn" href={contactHref}>
+                <Icon name="ph:envelope-simple" aria-hidden="true" />
+                {contactLabel}
+              </a>
+            ) : (
+              <a class="btn" href={url('/apps')}>All projects</a>
+            )
+          }
+          {activeSocials.map((social) => (
+            <a class="btn" href={social.href} rel="me noopener">
+              <Icon name={social.icon} aria-hidden="true" />
+              {social.label}
+            </a>
+          ))}
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* --- hero --------------------------------------------------------------- */
+
+  /* Nothing is centred. The chart caption and the legend hold the top, the
+     name sits on the floor of the viewport, and the lead and the scroll cue
+     share the last line. */
+  .hero {
+    position: relative;
+    min-height: 100dvh;
+    display: grid;
+    padding-block: calc(var(--header-height) + var(--space-l)) var(--space-l);
+  }
+
+  .hero__grid {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: var(--space-m);
+    align-items: start;
+  }
+
+  /* On touch there is no hover, and the constellations are not tappable there
+     either: the sentence would be telling the reader to do something the
+     device cannot. The statement stays, the instruction goes. */
+  @media (pointer: coarse) {
+    .hero__caption-hint { display: none; }
+  }
+
+  .hero__caption { grid-row: 1; max-width: 22ch; }
+
+  .hero__name { grid-row: 3; }
+
+  .hero__foot {
+    grid-row: 4;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-m);
+    padding-block-start: var(--space-s);
+    border-top: var(--border) solid var(--line);
+  }
+
+  @media (min-width: 56rem) {
+    .hero__grid {
+      grid-template-columns: 1fr auto;
+      column-gap: var(--space-xl);
+      grid-template-rows: auto 1fr auto auto;
+    }
+    .hero__caption { grid-column: 1; grid-row: 1; }
+    .hero__name { grid-column: 1 / -1; grid-row: 3; }
+    .hero__foot { grid-column: 1 / -1; grid-row: 4; }
+  }
+
+  .hero__lead {
+    max-width: 44ch;
+    font-size: var(--step-0);
+    line-height: var(--leading-normal);
+    color: var(--ink-muted);
+  }
+
+  @keyframes lead-in {
+    from { opacity: 0; transform: translateY(16px); filter: blur(6px); }
+    to { opacity: 1; transform: none; filter: blur(0); }
+  }
+
+  /* --- scroll indicator ---------------------------------------------------
+     A hairline with a light falling down it, rather than a bouncing mouse. */
+
+  .scroller {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2xs);
+    text-decoration: none;
+    color: var(--ink-faint);
+    flex: none;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .scroller:hover { color: var(--ink); }
+
+  .scroller__rail {
+    position: relative;
+    display: block;
+    width: 1px;
+    height: 3rem;
+    background: linear-gradient(to bottom, transparent, var(--line-strong), transparent);
+    overflow: hidden;
+  }
+
+  .scroller__spark {
+    position: absolute;
+    inset-inline: -1px;
+    height: 40%;
+    background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__foot { animation: lead-in 900ms var(--ease) 900ms both; }
+    .hero__caption { animation: lead-in 900ms var(--ease) 1150ms both; }
+    .scroller__spark { animation: fall 2600ms var(--ease-inout) infinite; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroller__spark { top: 30%; }
+  }
+
+  @keyframes fall {
+    0% { transform: translateY(-120%); opacity: 0; }
+    35% { opacity: 1; }
+    100% { transform: translateY(340%); opacity: 0; }
+  }
+
+  .scroller__word {
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  /* --- projects ----------------------------------------------------------- */
+
+  .projects__head { display: grid; gap: var(--space-s); max-width: 44ch; }
+
+  .projects__title { font-size: var(--step-4); }
+
+  .dot { color: var(--accent); }
+
+  .empty {
+    padding: var(--space-xl);
+    max-width: 44ch;
+    display: grid;
+    gap: var(--space-s);
+  }
+
+  .empty h3 { font-size: var(--step-2); }
+  .empty p { color: var(--ink-muted); font-size: var(--step--1); }
+
+  /* --- closing ------------------------------------------------------------ */
+
+  .closing { padding-block-end: var(--space-section); }
+
+  .closing__panel {
+    padding: clamp(var(--space-l), 5vw, var(--space-2xl));
+    display: grid;
+    gap: var(--space-m);
+    justify-items: start;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .closing__title { font-size: var(--step-3); max-width: 20ch; position: relative; }
+
+  .closing__body { color: var(--ink-muted); max-width: 52ch; position: relative; }
+
+  .closing__actions {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+    margin-block-start: var(--space-2xs);
+  }
+</style>

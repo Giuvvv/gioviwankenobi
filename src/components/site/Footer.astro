@@ -1,0 +1,190 @@
+---
+import { Icon } from 'astro-icon/components';
+import { siteConfig, activeSocials, supportEmail } from '~/config/site';
+import { url } from '~/utils/paths';
+import { mailto, realAddress } from '~/utils/contact';
+import { getApps, getLegalForScope } from '~/utils/apps';
+import Wordmark from './Wordmark.astro';
+
+const apps = await getApps();
+const siteLegal = await getLegalForScope('site');
+const hasPrivacy = siteLegal.some((d) => d.kind === 'privacy');
+const hasTerms = siteLegal.some((d) => d.kind === 'terms');
+
+const contactHref = mailto(supportEmail);
+const contactLabel = realAddress(supportEmail);
+
+const currentYear = new Date().getFullYear();
+const years =
+  currentYear > siteConfig.foundedYear
+    ? `${siteConfig.foundedYear}-${currentYear}`
+    : `${siteConfig.foundedYear}`;
+---
+
+<footer class="site-footer" lang="en">
+  <div class="wrap site-footer__inner">
+    <div class="site-footer__brand">
+      <Wordmark variant="inline" as="p" />
+      <p class="site-footer__blurb">{siteConfig.shortDescription}.</p>
+      {
+        contactHref && contactLabel ? (
+          <a class="link site-footer__mail" href={contactHref}>
+            {contactLabel}
+          </a>
+        ) : (
+          <a class="link site-footer__mail" href={url('/about')}>
+            Get in touch
+          </a>
+        )
+      }
+    </div>
+
+    <nav class="site-footer__cols" aria-label="Footer">
+      {
+        apps.length > 0 && (
+          <div class="site-footer__col">
+            <h2 class="label">Projects</h2>
+            <ul>
+              {apps.slice(0, 5).map((app) => (
+                <li>
+                  <a href={url('/apps', app.id)}>{app.data.name}</a>
+                </li>
+              ))}
+              <li>
+                <a href={url('/apps')}>All projects</a>
+              </li>
+            </ul>
+          </div>
+        )
+      }
+
+      <div class="site-footer__col">
+        <h2 class="label">Site</h2>
+        <ul>
+          <li><a href={url()}>Home</a></li>
+          <li><a href={url('/apps')}>Projects</a></li>
+          <li><a href={url('/about')}>About</a></li>
+        </ul>
+      </div>
+
+      {
+        (hasPrivacy || hasTerms) && (
+          <div class="site-footer__col">
+            <h2 class="label">Legal</h2>
+            <ul>
+              {hasPrivacy && (
+                <li>
+                  <a href={url('/privacy')}>Privacy</a>
+                </li>
+              )}
+              {hasTerms && (
+                <li>
+                  <a href={url('/terms')}>Terms</a>
+                </li>
+              )}
+            </ul>
+          </div>
+        )
+      }
+
+      {
+        activeSocials.length > 0 && (
+          <div class="site-footer__col">
+            <h2 class="label">Elsewhere</h2>
+            <ul>
+              {activeSocials.map((social) => (
+                <li>
+                  <a href={social.href} rel="me noopener">
+                    <Icon name={social.icon} aria-hidden="true" />
+                    {social.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+    </nav>
+  </div>
+
+  <div class="wrap site-footer__base">
+    <p class="meta">&copy; {years} {siteConfig.name}</p>
+    <p class="meta">{siteConfig.domain}</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-block-start: auto;
+    border-top: var(--border) solid var(--line);
+    padding-block-start: var(--space-2xl);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    gap: var(--space-xl);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 48rem) {
+    .site-footer__inner {
+      grid-template-columns: minmax(14rem, 20rem) 1fr;
+      gap: var(--space-2xl);
+    }
+  }
+
+  .site-footer__blurb {
+    margin-block-start: var(--space-2xs);
+    color: var(--ink-faint);
+    font-size: var(--step--1);
+  }
+
+  .site-footer__mail {
+    margin-block-start: var(--space-s);
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .site-footer__cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: var(--space-l) var(--space-m);
+    align-content: start;
+  }
+
+  .site-footer__col ul {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-xs) 0 0;
+    display: grid;
+    gap: var(--space-3xs);
+  }
+
+  .site-footer__col a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+    text-decoration: none;
+    border-bottom: var(--border) solid transparent;
+    transition: color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  .site-footer__col a:hover {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+
+  .site-footer__base {
+    margin-block-start: var(--space-2xl);
+    padding-block: var(--space-m);
+    border-top: var(--border) solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-s);
+    color: var(--ink-faint);
+  }
+</style>

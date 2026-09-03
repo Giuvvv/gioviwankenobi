@@ -1,0 +1,145 @@
+---
+import { Icon } from 'astro-icon/components';
+import { PLATFORMS, STATUS } from '~/config/platforms';
+import { url } from '~/utils/paths';
+import type { App } from '~/utils/apps';
+import AppIcon from './AppIcon.astro';
+
+export interface Props {
+  app: App;
+  /**
+   * Heading level for the app name. Use 2 where the grid is the page's main
+   * content, 3 where it sits under a section heading.
+   */
+  headingLevel?: 2 | 3;
+}
+
+const { app, headingLevel = 3 } = Astro.props;
+const Heading = `h${headingLevel}` as 'h2' | 'h3';
+const { data } = app;
+const href = url('/apps', app.id);
+const platformLabels = data.platforms.map((p) => PLATFORMS[p].label).join(', ');
+---
+
+<article
+  class="app-card plate"
+  style={`--app-accent:${data.accent.dark};--app-accent-ink:${data.accent.onDark}`}
+>
+  <div class="app-card__glow"></div>
+
+  <div class="app-card__top">
+    <AppIcon src={data.icon} name={data.name} size={52} />
+    <span class="status" data-status={data.status}>{STATUS[data.status].label}</span>
+  </div>
+
+  <Heading class="app-card__name">
+    <a href={href}>{data.name}</a>
+  </Heading>
+  <p class="app-card__tagline">{data.tagline}</p>
+
+  <p class="app-card__platforms">
+    <span class="visually-hidden">Available on {platformLabels}.</span>
+    {
+      data.platforms.map((p) => (
+        <Icon name={PLATFORMS[p].icon} title={PLATFORMS[p].label} aria-hidden="true" />
+      ))
+    }
+    {data.isDemo && <span class="app-card__demo">Demo entry</span>}
+  </p>
+</article>
+
+<style>
+  .app-card {
+    /* Everything inside a card speaks in the app's colour, including the
+       shared status chip. */
+    --accent: var(--app-accent);
+    --accent-ink: var(--app-accent-ink);
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-m);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-height: 15rem;
+    transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease),
+      box-shadow var(--dur) var(--ease);
+  }
+
+  /* The app's colour arrives as a soft bloom in the corner rather than as a
+     border, so the card still reads as a window onto the sky behind it. */
+  .app-card__glow {
+    position: absolute;
+    inset: -40% 30% 55% -25%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--app-accent) 42%, transparent) 0%,
+      transparent 70%
+    );
+    opacity: 0.5;
+    transition: opacity var(--dur-slow) var(--ease);
+    pointer-events: none;
+  }
+
+  .app-card:hover,
+  .app-card:focus-within {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 24px 60px color-mix(in srgb, var(--app-accent) 20%, transparent);
+  }
+
+  .app-card:hover .app-card__glow,
+  .app-card:focus-within .app-card__glow { opacity: 0.95; }
+
+  .app-card__top {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-s);
+    margin-block-end: var(--space-2xs);
+  }
+
+  .app-card__name {
+    position: relative;
+    font-size: var(--step-2);
+    line-height: 1.1;
+  }
+
+  .app-card__name a { text-decoration: none; }
+
+  /* Makes the whole card clickable while keeping one real link in the a11y
+     tree. */
+  .app-card__name a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .app-card__tagline {
+    position: relative;
+    color: var(--ink-muted);
+    font-size: var(--step--1);
+    max-width: 30ch;
+  }
+
+  .app-card__platforms {
+    position: relative;
+    margin-block-start: auto;
+    padding-block-start: var(--space-s);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    color: var(--ink-faint);
+    font-size: 1.1rem;
+  }
+
+  .app-card__demo {
+    margin-inline-start: auto;
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+  }
+</style>

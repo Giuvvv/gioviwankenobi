@@ -1,0 +1,177 @@
+---
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import { PLATFORMS, STATUS } from '~/config/platforms';
+import { url } from '~/utils/paths';
+import { appImage } from '~/utils/images';
+import type { App } from '~/utils/apps';
+import AppIcon from './AppIcon.astro';
+
+export interface Props {
+  app: App;
+  /** The plate above the fold should not lazy-load its screenshot. */
+  eager?: boolean;
+}
+
+const { app, eager = false } = Astro.props;
+const { data } = app;
+const href = url('/apps', app.id);
+const shot = data.screenshots[0];
+const shotImage = shot ? appImage(shot.src) : null;
+const platformLabels = data.platforms.map((p) => PLATFORMS[p].label).join(', ');
+---
+
+<article
+  class="plate"
+  style={`--app-accent:${data.accent.light};--app-accent-dark:${data.accent.dark};--app-accent-ink:${data.accent.onLight};--app-accent-ink-dark:${data.accent.onDark}`}
+>
+  <div class="plate__body">
+    <div class="plate__head">
+      <AppIcon src={data.icon} name={data.name} size={72} loading={eager ? 'eager' : 'lazy'} />
+      <span class="status" data-status={data.status}>{STATUS[data.status].label}</span>
+    </div>
+
+    <h3 class="plate__name"><a href={href}>{data.name}</a></h3>
+    <p class="plate__tagline">{data.tagline}</p>
+    <p class="plate__summary">{data.summary}</p>
+
+    <p class="plate__meta meta">
+      <span class="visually-hidden">Available on {platformLabels}.</span>
+      {
+        data.platforms.map((p) => (
+          <Icon name={PLATFORMS[p].icon} title={PLATFORMS[p].label} aria-hidden="true" />
+        ))
+      }
+      {data.version && <span>Version {data.version}</span>}
+    </p>
+
+    <p class="plate__cta">
+      <span class="btn btn--primary">Open {data.name}<Icon name="ph:arrow-right" aria-hidden="true" /></span>
+    </p>
+  </div>
+
+  {
+    shotImage && shot && (
+      <div class="plate__media">
+        <Image
+          class="plate__shot"
+          src={shotImage}
+          alt={shot.alt}
+          widths={[280, 420, 560, 1170, 2340]}
+          quality={92}
+          sizes="(min-width: 64rem) 14rem, 42vw"
+          loading={eager ? 'eager' : 'lazy'}
+          decoding="async"
+        />
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .plate {
+    /* Everything inside a plate speaks in the app's colour, including the
+       shared status chip. */
+    --accent: var(--app-accent);
+    --accent-ink: var(--app-accent-ink);
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    border: var(--border) solid var(--line);
+    background-color: var(--paper);
+  }
+
+  @media (min-width: 56rem) {
+    .plate { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+  }
+
+  .plate__body {
+    padding: clamp(var(--space-m), 4vw, var(--space-xl));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .plate__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    margin-block-end: var(--space-s);
+  }
+
+  .plate__name { font-size: var(--step-4); line-height: 1; }
+
+  .plate__name a { text-decoration: none; }
+
+  .plate__name a::after { content: ''; position: absolute; inset: 0; }
+
+  .plate__tagline {
+    font-size: var(--step-1);
+    color: var(--ink);
+    max-width: 24ch;
+  }
+
+  .plate__summary {
+    color: var(--ink-muted);
+    font-size: var(--step--1);
+    max-width: 46ch;
+  }
+
+  .plate__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    color: var(--ink-faint);
+    margin-block-start: var(--space-2xs);
+  }
+
+  .plate__cta { margin-block-start: auto; padding-block-start: var(--space-m); }
+
+  .plate__media {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    background-color: var(--app-accent);
+    order: -1;
+  }
+
+  @media (min-width: 56rem) {
+    .plate__media { order: 0; aspect-ratio: auto; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .plate {
+      --app-accent: var(--app-accent-dark);
+      --app-accent-ink: var(--app-accent-ink-dark);
+    }
+  }
+
+  :global(:root[data-theme='dark']) .plate {
+    --app-accent: var(--app-accent-dark);
+    --app-accent-ink: var(--app-accent-ink-dark);
+  }
+
+  .plate__shot {
+    position: absolute;
+    inset-block-end: -8%;
+    inset-inline-start: 50%;
+    width: min(44%, 14rem);
+    height: auto;
+    transform: translateX(-50%);
+    border: var(--border) solid color-mix(in srgb, #000 22%, transparent);
+    transition: transform var(--dur-slow) var(--ease);
+  }
+
+  .plate:hover .plate__shot,
+  .plate:focus-within .plate__shot {
+    transform: translateX(-50%) translateY(-1.25rem);
+  }
+
+  .plate:hover .btn--primary,
+  .plate:focus-within .btn--primary {
+    background-color: var(--app-accent);
+    border-color: var(--app-accent);
+    color: var(--app-accent-ink);
+  }
+</style>

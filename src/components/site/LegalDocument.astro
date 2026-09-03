@@ -1,0 +1,181 @@
+---
+import { render } from 'astro:content';
+import { Icon } from 'astro-icon/components';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { siteConfig } from '~/config/site';
+import { formatDate, isoDate, languageName } from '~/utils/format';
+import { url } from '~/utils/paths';
+import { LEGAL_LABELS, legalUrl } from '~/utils/legal';
+import { legalStrings } from '~/config/legalStrings';
+import { localesFor, type App, type LegalRef } from '~/utils/apps';
+
+export interface Props {
+  /** The document being rendered. */
+  doc: LegalRef;
+  /** Every document in the same scope, used for the locale switcher. */
+  siblings: LegalRef[];
+  /** Present when the document belongs to an app rather than to the site. */
+  app?: App;
+}
+
+const { doc, siblings, app } = Astro.props;
+const { Content, headings } = await render(doc.entry);
+
+const sections = headings.filter((h) => h.depth === 2);
+const showToc = sections.length > 3;
+
+const locales = localesFor(siblings, doc.kind);
+const t = legalStrings(doc.locale);
+const owner = app ? app.data.name : siteConfig.name;
+
+const backHref = app ? url('apps', doc.scope) : url();
+const backLabel = app ? app.data.name : 'Home';
+
+const title = doc.entry.data.title;
+const description = `${LEGAL_LABELS[doc.kind]} for ${owner}. Last revised ${formatDate(
+  doc.entry.data.updated,
+)}.`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  ogType="article"
+  lang={doc.locale}
+  accent={app?.data.accent}
+>
+  <article class="legal">
+    <div class="wrap wrap--narrow legal__sheet">
+      <nav class="legal__back" aria-label="Breadcrumb">
+        <a class="link link--quiet" href={backHref}>
+          <Icon name="ph:arrow-left" aria-hidden="true" />
+          {backLabel}
+        </a>
+      </nav>
+
+      <header class="legal-head">
+        <h1>{title}</h1>
+        <dl class="legal-head__meta">
+          <div>
+            <dt class="label">{t.updated}</dt>
+            <dd>
+              <time datetime={isoDate(doc.entry.data.updated)}>
+                {formatDate(doc.entry.data.updated, doc.locale)}
+              </time>
+            </dd>
+          </div>
+          {
+            doc.entry.data.version && (
+              <div>
+                <dt class="label">{t.version}</dt>
+                <dd class="meta">{doc.entry.data.version}</dd>
+              </div>
+            )
+          }
+          <div>
+            <dt class="label">{t.language}</dt>
+            <dd>{languageName(doc.locale, doc.locale)}</dd>
+          </div>
+        </dl>
+
+        {
+          locales.length > 1 && (
+            <p class="legal-head__locales meta">
+              {locales.map((locale) => (
+                <a
+                  href={legalUrl(doc.scope, doc.kind, locale)}
+                  hreflang={locale}
+                  aria-current={locale === doc.locale ? 'page' : undefined}
+                >
+                  {languageName(locale, locale)}
+                </a>
+              ))}
+            </p>
+          )
+        }
+      </header>
+
+      {
+        doc.entry.data.isPlaceholder && (
+          <p class="notice legal__placeholder">
+            <strong>Placeholder text.</strong> This document shows the structure a
+            policy takes on this site. It has not been reviewed and is not legal
+            advice. Replace it before submitting this URL anywhere.
+          </p>
+        )
+      }
+
+      {
+        showToc && (
+          <nav class="toc" aria-label={t.contents}>
+            <p class="label">{t.contents}</p>
+            <ol>
+              {sections.map((section) => (
+                <li>
+                  <a href={`#${section.slug}`}>{section.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+
+      <div class="prose legal__body">
+        <Content />
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal { padding-block: calc(var(--header-height) + var(--space-l)) var(--space-2xl); }
+
+  /* A calm sheet under the text. Legal pages are read, printed and submitted
+     to app stores, so the sky stays behind plate here rather than behind
+     paragraphs. */
+  .legal__sheet {
+    background: rgba(9, 12, 26, 0.72);
+    backdrop-filter: blur(calc(var(--blur) * 1.4));
+    -webkit-backdrop-filter: blur(calc(var(--blur) * 1.4));
+    border: var(--border) solid var(--line);
+    border-radius: var(--radius);
+    padding-block: clamp(var(--space-l), 5vw, var(--space-2xl));
+    max-width: min(var(--wrap-narrow), 100%);
+  }
+
+  @supports not (backdrop-filter: blur(2px)) {
+    .legal__sheet { background: rgba(9, 12, 26, 0.95); }
+  }
+
+  .legal__back { margin-block-end: var(--space-xl); font-size: var(--step--1); }
+
+  .legal__back :global(svg) { margin-inline-end: 0.2em; }
+
+  .legal-head {
+    padding-block-end: var(--space-l);
+    border-bottom: var(--border) solid var(--line);
+  }
+
+  .legal-head h1 { font-size: var(--step-4); max-width: 20ch; }
+
+  .legal-head__meta {
+    margin: var(--space-l) 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--space-m);
+  }
+
+  .legal-head__meta dd { margin: var(--space-3xs) 0 0; font-size: var(--step--1); }
+
+  .legal-head__locales { display: flex; gap: var(--space-m); margin-block-start: var(--space-m); }
+
+  .legal-head__locales a { color: var(--ink-faint); text-decoration: none; border-bottom: var(--border) solid transparent; }
+
+  .legal-head__locales a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+  .legal-head__locales a[aria-current='page'] { color: var(--ink); border-bottom-color: var(--accent); }
+
+  .legal__placeholder { margin-block-start: var(--space-l); }
+
+  .legal__body { margin-block-start: var(--space-xl); }
+</style>

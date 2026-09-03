@@ -1,0 +1,298 @@
+---
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import { PLATFORMS, STATUS } from '~/config/platforms';
+import { url } from '~/utils/paths';
+import { appImage } from '~/utils/images';
+import type { App } from '~/utils/apps';
+
+export interface Props {
+  app: App;
+  /** Odd-indexed projects flip, so the scroll alternates side to side. */
+  reverse?: boolean;
+  /** The first showcase is above the fold on some screens. */
+  eager?: boolean;
+}
+
+const { app, reverse = false, eager = false } = Astro.props;
+const { data } = app;
+
+const href = url('/apps', app.id);
+/*
+ * The home page leads with the poster when the app has one: a screenshot shows
+ * what an app looks like, which matters on its own page, while the card says
+ * what it is, which is what a passer-by needs first.
+ */
+const shot = data.poster ?? data.screenshots[0];
+const shotImage = shot ? appImage(shot.src) : null;
+const platformLabels = data.platforms.map((p) => PLATFORMS[p].label).join(', ');
+
+const store =
+  data.links.appStore ?? data.links.googlePlay ?? data.links.testFlight ?? data.links.website;
+const storeLabel = data.links.appStore
+  ? 'App Store'
+  : data.links.googlePlay
+    ? 'Google Play'
+    : data.links.testFlight
+      ? 'TestFlight'
+      : 'Website';
+const storeReady = typeof store === 'string' && !store.includes('TODO_');
+const githubReady = typeof data.links.github === 'string' && !data.links.github.includes('TODO_');
+---
+
+<article
+  class:list={['showcase', reverse && 'showcase--reverse']}
+  style={`--app-accent:${data.accent.dark};--app-accent-ink:${data.accent.onDark}`}
+>
+  <div class="showcase__media reveal" data-tilt>
+    <div class="showcase__frame plate">
+      <div class="showcase__glow"></div>
+      {
+        shotImage && shot ? (
+          <Image
+            class="showcase__shot"
+            src={shotImage}
+            alt={shot.alt}
+            widths={[320, 480, 720, 1170, 2340]}
+            quality={92}
+            sizes="(min-width: 64rem) 20rem, 44vw"
+            loading={eager ? 'eager' : 'lazy'}
+            decoding="async"
+          />
+        ) : (
+          <p class="showcase__noshot meta">Screenshot to come</p>
+        )
+      }
+    </div>
+  </div>
+
+  <div class="showcase__body">
+    <p class="reveal" style="--reveal-delay:60ms">
+      <span class="status" data-status={data.status}>{STATUS[data.status].label}</span>
+    </p>
+
+    <h3 class="showcase__name reveal" style="--reveal-delay:120ms">
+      <a href={href}>{data.name}</a>
+    </h3>
+
+    <p class="showcase__tagline reveal" style="--reveal-delay:180ms">{data.tagline}</p>
+    <p class="showcase__summary reveal" style="--reveal-delay:240ms">{data.summary}</p>
+
+    {
+      data.tech.length > 0 && (
+        <ul class="chips showcase__tech reveal" style="--reveal-delay:300ms">
+          {data.tech.map((t) => (
+            <li class="chip">{t}</li>
+          ))}
+        </ul>
+      )
+    }
+
+    <p class="showcase__platforms meta reveal" style="--reveal-delay:340ms">
+      <span class="visually-hidden">Available on {platformLabels}.</span>
+      {
+        data.platforms.map((p) => (
+          <Icon name={PLATFORMS[p].icon} title={PLATFORMS[p].label} aria-hidden="true" />
+        ))
+      }
+      {data.version && <span>v{data.version}</span>}
+    </p>
+
+    <p class="showcase__actions reveal" style="--reveal-delay:400ms">
+      <a class="btn btn--primary" href={href}>
+        View project<Icon name="ph:arrow-right" aria-hidden="true" />
+      </a>
+      {
+        storeReady && store && (
+          <a class="btn" href={store} rel="noopener">
+            <Icon name="ph:apple-logo" aria-hidden="true" />
+            {storeLabel}
+          </a>
+        )
+      }
+      {
+        githubReady && (
+          <a class="btn" href={data.links.github} rel="noopener">
+            <Icon name="ph:github-logo" aria-hidden="true" />
+            GitHub
+          </a>
+        )
+      }
+    </p>
+  </div>
+</article>
+
+<style>
+  .showcase {
+    /* Everything inside a project speaks in that project's colour. */
+    --accent: var(--app-accent);
+    --accent-ink: var(--app-accent-ink);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: center;
+    padding-block: var(--space-2xl);
+  }
+
+  @media (min-width: 56rem) {
+    .showcase {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: clamp(2.5rem, 6vw, 5.5rem);
+    }
+    .showcase--reverse .showcase__media { order: 2; }
+  }
+
+  /* --- media ------------------------------------------------------------- */
+
+  .showcase__media {
+    perspective: 1000px;
+  }
+
+  .showcase__frame {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transform-style: preserve-3d;
+    transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+
+  .showcase__frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--app-accent) 18%, transparent),
+      transparent 60%
+    );
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  /* A soft pool of the app's colour that follows the pointer across the frame. */
+  .showcase__glow {
+    position: absolute;
+    inset: -30%;
+    background: radial-gradient(
+      38% 38% at var(--gx, 50%) var(--gy, 40%),
+      color-mix(in srgb, var(--app-accent) 55%, transparent) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity var(--dur-slow) var(--ease);
+    pointer-events: none;
+  }
+
+  .showcase__media:hover .showcase__glow { opacity: 0.55; }
+
+  .showcase__media:hover .showcase__frame {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 30px 80px color-mix(in srgb, var(--app-accent) 22%, transparent);
+  }
+
+  .showcase__shot {
+    position: relative;
+    width: min(100%, 17rem);
+    height: auto;
+    border-radius: var(--radius-sm);
+    border: var(--border) solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    transform: translateZ(40px) scale(var(--shot-scale, 1));
+    transition: transform var(--dur-slow) var(--ease);
+  }
+
+  .showcase__media:hover .showcase__shot { --shot-scale: 1.045; }
+
+  .showcase__noshot { position: relative; padding-block: 4rem; }
+
+  /* --- body -------------------------------------------------------------- */
+
+  .showcase__body { display: grid; gap: var(--space-s); align-content: start; }
+
+  .showcase__name {
+    font-size: var(--step-4);
+    line-height: 1.05;
+    margin-block-start: var(--space-2xs);
+  }
+
+  .showcase__name a {
+    text-decoration: none;
+    background-image: linear-gradient(var(--app-accent), var(--app-accent));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 2px;
+    transition: background-size var(--dur) var(--ease);
+  }
+
+  .showcase__name a:hover { background-size: 100% 2px; }
+
+  .showcase__tagline {
+    font-size: var(--step-1);
+    color: var(--ink);
+    max-width: 26ch;
+  }
+
+  .showcase__summary { color: var(--ink-muted); max-width: 52ch; }
+
+  .showcase__tech { list-style: none; padding: 0; margin: var(--space-2xs) 0 0; }
+
+  .showcase__platforms {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    color: var(--ink-faint);
+    font-size: 1.05rem;
+  }
+
+  .showcase__platforms span { font-size: var(--step--1); }
+
+  .showcase__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+    margin-block-start: var(--space-s);
+  }
+</style>
+
+<script>
+  /*
+   * Pointer tilt. Two rotation values and a glow position are written straight
+   * to custom properties on pointermove, which the browser already coalesces to
+   * one event per frame. No rAF guard: a guard that only clears inside rAF
+   * latches permanently the moment rAF is throttled.
+   */
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = window.matchMedia('(pointer: fine)').matches;
+
+  if (!still && fine) {
+    document.querySelectorAll<HTMLElement>('[data-tilt]').forEach((host) => {
+      const frame = host.querySelector<HTMLElement>('.showcase__frame');
+      const glow = host.querySelector<HTMLElement>('.showcase__glow');
+      if (!frame) return;
+
+      host.addEventListener(
+        'pointermove',
+        (e) => {
+          const r = host.getBoundingClientRect();
+          const nx = (e.clientX - r.left) / r.width;
+          const ny = (e.clientY - r.top) / r.height;
+          frame.style.setProperty('--ry', ((nx - 0.5) * 9).toFixed(2) + 'deg');
+          frame.style.setProperty('--rx', ((0.5 - ny) * 7).toFixed(2) + 'deg');
+          glow?.style.setProperty('--gx', (nx * 100).toFixed(1) + '%');
+          glow?.style.setProperty('--gy', (ny * 100).toFixed(1) + '%');
+        },
+        { passive: true },
+      );
+
+      host.addEventListener('pointerleave', () => {
+        frame.style.setProperty('--rx', '0deg');
+        frame.style.setProperty('--ry', '0deg');
+      });
+    });
+  }
+</script>

@@ -1,0 +1,198 @@
+---
+import '@fontsource-variable/sora/wght.css';
+import '@fontsource-variable/instrument-sans/wght.css';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import '~/styles/global.css';
+
+import soraWoff2 from '@fontsource-variable/sora/files/sora-latin-wght-normal.woff2?url';
+import instrumentWoff2 from '@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url';
+
+import { siteConfig } from '~/config/site';
+import BaseHead from '~/components/site/BaseHead.astro';
+import Header from '~/components/site/Header.astro';
+import Footer from '~/components/site/Footer.astro';
+import StarChart from '~/components/site/StarChart.astro';
+import Cursor from '~/components/site/Cursor.astro';
+import Ship from '~/components/site/Ship.astro';
+
+export interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+  schema?: Record<string, unknown>[];
+  /** Document language. App legal pages pass their own locale. */
+  lang?: string;
+  /**
+   * Per-page accent override. App pages pass their own colour here; every
+   * other token stays global, which is what keeps the site recognisable.
+   */
+  accent?: { light: string; dark: string; onLight: string; onDark: string };
+  /** Extra class on <body>, used by app pages for scoped styling hooks. */
+  bodyClass?: string;
+  /** Slug of the app whose constellation should be lit on this page. */
+  chartActive?: string;
+}
+
+const {
+  title,
+  description,
+  ogImage,
+  ogType,
+  noindex,
+  schema,
+  lang = siteConfig.defaultLocale,
+  accent,
+  bodyClass,
+  chartActive,
+} = Astro.props;
+
+/*
+ * The site is a single dark environment, so only the dark half of an app's
+ * accent pair is used. `:root:root` outranks the `:root` rules in tokens.css,
+ * so the override wins no matter where Astro injects the bundled stylesheet.
+ */
+const accentCss = accent
+  ? `:root:root{--accent:${accent.dark};--accent-ink:${accent.onDark};}`
+  : null;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <BaseHead
+      title={title}
+      description={description}
+      ogImage={ogImage}
+      ogType={ogType}
+      noindex={noindex}
+      schema={schema}
+      locale={lang}
+    />
+
+    <link rel="preload" as="font" type="font/woff2" href={soraWoff2} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={instrumentWoff2} crossorigin />
+
+    {accentCss && <style is:inline set:html={accentCss} />}
+  </head>
+
+  <body class={bodyClass}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <StarChart active={chartActive} />
+    <Cursor />
+    <Header />
+
+    {/*
+      Everything that turns around when you fly behind the page. The header is
+      deliberately outside: a position:fixed element stops being fixed to the
+      viewport once an ancestor carries a 3D transform.
+    */}
+    <div class="world" data-world>
+      <main id="main">
+        <slot />
+      </main>
+      <Footer />
+    </div>
+
+    <Ship />
+
+    <style>
+      .skip-link {
+        /* Fixed so it stays reachable even when the page is already scrolled,
+           and :focus rather than :focus-visible because a skip link that only
+           appears for some focus modes is a skip link that does not work. */
+        position: fixed;
+        left: var(--gutter);
+        top: var(--space-2xs);
+        z-index: var(--z-skiplink);
+        transform: translateY(-250%);
+        background-color: var(--accent);
+        color: var(--accent-ink);
+        padding: 0.6rem 1rem;
+        border-radius: var(--radius);
+        font-size: var(--step--1);
+        text-decoration: none;
+        transition: transform var(--dur-fast) var(--ease);
+      }
+
+      .skip-link:focus { transform: translateY(0); }
+
+      main { display: block; }
+
+      /* The wrapper takes over the column layout so the footer keeps its
+         margin-block-start: auto. */
+      .world {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        transform-origin: 50% 45%;
+      }
+
+      /* The transform itself is written by the ship, frame by frame: a CSS
+         transition cannot express a camera that follows something. This only
+         says what stops being interactive while you are back there. */
+      :global(html[data-behind]) .world {
+        pointer-events: none;
+        user-select: none;
+      }
+
+      /*
+       * Promoted for both halves of the trip, not just the arrival. The exit
+       * takes the whole page from twenty times its size down to one over half
+       * a second, and leave() drops data-behind before that starts: without
+       * this the layer was unpromoted for exactly those frames, so the browser
+       * re-rasterised the entire page at a new scale sixty times a second.
+       * Promoted, it rasters once and the compositor does the rest.
+       */
+      :global(html[data-behind]) .world,
+      :global(html[data-warping]) .world {
+        will-change: transform;
+      }
+
+      /* Flying is not scrolling. */
+      :global(html[data-behind]),
+      :global(html[data-warping]) {
+        overflow: hidden;
+      }
+    </style>
+
+    <script>
+      /*
+       * One observer drives every scroll reveal on the page. Elements opt in
+       * with class="reveal" and are unobserved as soon as they land, so a long
+       * page never accumulates work.
+       */
+      const targets = document.querySelectorAll<HTMLElement>('.reveal');
+      const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const showAll = () => targets.forEach((el) => el.classList.add('is-in'));
+
+      if (!still && 'IntersectionObserver' in window && targets.length) {
+        // Only now does anything become hidden.
+        document.documentElement.classList.add('js-reveal');
+
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              entry.target.classList.add('is-in');
+              io.unobserve(entry.target);
+            }
+          },
+          { rootMargin: '0px 0px -12% 0px', threshold: 0.12 },
+        );
+        targets.forEach((el) => io.observe(el));
+
+        // Failsafe: if the observer has not delivered anything by now, the
+        // rendering lifecycle is not running as expected. Show everything
+        // rather than leave the page blank.
+        setTimeout(() => {
+          if (!document.querySelector('.reveal.is-in')) {
+            io.disconnect();
+            showAll();
+          }
+        }, 2500);
+      }
+    </script>
+  </body>
+</html>

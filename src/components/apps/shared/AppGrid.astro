@@ -1,0 +1,17 @@
+---
+export interface Props { class?: string }
+const { class: className = '' } = Astro.props;
+---
+
+<div class:list={['app-grid', className]}><slot /></div>
+
+<style>
+  /* auto-fill keeps the cell width steady as the catalogue grows. Cards are
+     free-standing plate panels, so an unfilled track is simply empty sky
+     rather than a stray block of colour. */
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+    gap: var(--space-m);
+  }
+</style>

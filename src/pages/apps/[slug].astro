@@ -1,0 +1,112 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import { Icon } from 'astro-icon/components';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import AppHeader from '~/components/apps/shared/AppHeader.astro';
+import Screenshots from '~/components/apps/shared/Screenshots.astro';
+import FeatureList from '~/components/apps/shared/FeatureList.astro';
+import AppDetails from '~/components/apps/shared/AppDetails.astro';
+import Faq from '~/components/apps/shared/Faq.astro';
+import AppLegal from '~/components/apps/shared/AppLegal.astro';
+import { getApps, getLegalForScope } from '~/utils/apps';
+import { PLATFORMS } from '~/config/platforms';
+import { url } from '~/utils/paths';
+import { isoDate } from '~/utils/format';
+
+export const getStaticPaths = (async () => {
+  const apps = await getApps();
+  return apps.map((app) => ({ params: { slug: app.id }, props: { app } }));
+}) satisfies GetStaticPaths;
+
+const { app } = Astro.props;
+const { data } = app;
+
+const { Content } = await render(app);
+const hasBody = app.body != null && app.body.trim().length > 0;
+
+const legal = await getLegalForScope(app.id);
+
+/**
+ * Optional per-app section. Drop a Custom.astro into
+ * src/components/apps/<slug>/ and it is picked up here automatically.
+ * See README > "Giving an app its own design".
+ */
+const customSections = import.meta.glob<{ default: any }>(
+  '/src/components/apps/*/Custom.astro',
+  { eager: true },
+);
+const CustomSection = customSections[`/src/components/apps/${app.id}/Custom.astro`]?.default;
+
+// Only claim structured data when the app actually has a working destination.
+const realLink = Object.values(data.links).find(
+  (value): value is string => typeof value === 'string' && !value.includes('TODO_'),
+);
+
+const schema = realLink
+  ? [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: data.name,
+        description: data.summary,
+        operatingSystem: data.platforms.map((p) => PLATFORMS[p].label).join(', '),
+        url: new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).href,
+        installUrl: realLink,
+        ...(data.version ? { softwareVersion: data.version } : {}),
+        ...(data.released ? { datePublished: isoDate(data.released) } : {}),
+        ...(data.languages.length ? { inLanguage: data.languages } : {}),
+      },
+    ]
+  : [];
+---
+
+<BaseLayout
+  title={data.name}
+  description={data.seo.description ?? data.summary}
+  ogImage={data.seo.ogImage}
+  accent={data.accent}
+  schema={schema}
+  bodyClass={`app-page app-page--${app.id}`}
+  chartActive={app.id}
+>
+  <AppHeader app={app} />
+
+  <Screenshots screenshots={data.screenshots} appName={data.name} />
+
+  {
+    hasBody && (
+      <section class="section section--tight section-divider">
+        <div class="wrap">
+          <div class="prose app-body">
+            <Content />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {CustomSection && <CustomSection app={app} />}
+
+  <FeatureList features={data.features} headingId="features" />
+  <AppDetails app={app} headingId="details" />
+  <Faq faq={data.faq} headingId="questions" />
+  <AppLegal scope={app.id} refs={legal} headingId="legal" />
+
+  <nav class="app-foot section-divider" aria-label="Catalog">
+    <div class="wrap">
+      <a class="link link--quiet" href={url('/apps')}>
+        <Icon name="ph:arrow-left" aria-hidden="true" />
+        All apps
+      </a>
+    </div>
+  </nav>
+</BaseLayout>
+
+<style>
+  .app-body { font-size: var(--step-1); line-height: var(--leading-normal); }
+
+  .app-foot { padding-block: var(--space-xl); font-size: var(--step--1); }
+
+  .app-foot :global(svg) { margin-inline-end: 0.2em; }
+</style>

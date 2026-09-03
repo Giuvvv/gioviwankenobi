@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Aspera poster</title>
+    <style>
+      /*
+       * Rendered by scripts/render-cards.mjs at six times this size. Authored
+       * type and vector throughout, so nothing is a magnified bitmap.
+       *
+       * Aspera's palette: Floral White ground, indigo primary, the near-black
+       * green it uses for text. The typefaces are the site's, because the card
+       * is the site talking about the app.
+       */
+      @font-face {
+        font-family: 'Sora';
+        src: url('../../node_modules/@fontsource-variable/sora/files/sora-latin-wght-normal.woff2')
+          format('woff2-variations');
+        font-weight: 100 800;
+      }
+      @font-face {
+        font-family: 'Instrument Sans';
+        src: url('../../node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2')
+          format('woff2-variations');
+        font-weight: 400 700;
+      }
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        src: url('../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2')
+          format('woff2');
+        font-weight: 400;
+      }
+
+      :root {
+        --cream: #fffaf0;
+        --ink: #202820;
+        --indigo: #5b4bdb;
+        --indigo-deep: #4637c3;
+        --tint: #f1eeff;
+        --muted: #687269;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body { width: 390px; height: 844px; }
+
+      body {
+        position: relative;
+        overflow: hidden;
+        background: var(--cream);
+        font-family: 'Instrument Sans', system-ui, sans-serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        flex-direction: column;
+        padding: 46px 38px 44px;
+      }
+
+      body::before {
+        content: '';
+        position: absolute;
+        inset: -20%;
+        background:
+          radial-gradient(38% 30% at 84% 10%, rgba(91, 75, 219, 0.15), transparent 70%),
+          radial-gradient(46% 34% at 4% 92%, rgba(91, 75, 219, 0.08), transparent 72%);
+      }
+
+      body > * { position: relative; }
+
+      .mark {
+        font-family: 'Sora', system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 30px;
+        letter-spacing: -0.02em;
+      }
+
+      /* The app signs itself with a violet full stop; the card keeps it. */
+      .mark span { color: var(--indigo); }
+
+      .kicker {
+        margin-top: 6px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /*
+       * The mark is the session screen reduced to its idea: one set open with
+       * the numbers already in it, the rest collapsed, and the recovery timer
+       * running alongside. Flat geometry, no attempt at a rendering of the UI.
+       */
+      .art {
+        margin: auto 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .claim {
+        font-family: 'Sora', system-ui, sans-serif;
+        font-weight: 600;
+        font-size: 44px;
+        line-height: 1.04;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      .claim em { font-style: normal; color: var(--indigo); }
+
+      .sub {
+        margin-top: 20px;
+        font-size: 17px;
+        line-height: 1.45;
+        color: var(--muted);
+        max-width: 16em;
+      }
+
+      .points {
+        margin-top: 34px;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+        list-style: none;
+      }
+
+      .points li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 16.5px;
+        font-weight: 500;
+      }
+
+      .points svg { flex: 0 0 auto; }
+
+      .rule {
+        margin-top: 38px;
+        height: 3px;
+        width: 74px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, var(--indigo), var(--indigo-deep));
+      }
+
+      .foot {
+        margin-top: 20px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p class="mark">Aspera<span>.</span></p>
+      <p class="kicker">Training log</p>
+    </div>
+
+    <div class="art">
+      <svg width="176" height="196" viewBox="0 0 176 196" fill="none" aria-hidden="true">
+        <rect x="4" y="10" width="168" height="122" rx="20" fill="#FFFFFF" />
+        <rect x="4" y="10" width="168" height="122" rx="20" stroke="#202820"
+              stroke-width="2.5" opacity="0.1" />
+
+        <!-- The open set: filled, with its two numbers standing in. -->
+        <rect x="20" y="26" width="136" height="34" rx="12" fill="#5B4BDB" />
+        <rect x="32" y="38" width="34" height="10" rx="5" fill="#FFFFFF" opacity="0.95" />
+        <rect x="78" y="38" width="22" height="10" rx="5" fill="#FFFFFF" opacity="0.6" />
+        <rect x="112" y="38" width="30" height="10" rx="5" fill="#FFFFFF" opacity="0.35" />
+
+        <!-- The sets already done, collapsed out of the way. -->
+        <rect x="20" y="70" width="136" height="18" rx="9" fill="#5B4BDB" opacity="0.12" />
+        <rect x="20" y="96" width="136" height="18" rx="9" fill="#5B4BDB" opacity="0.08" />
+
+        <!-- Recovery, still counting. -->
+        <circle cx="88" cy="160" r="24" stroke="#5B4BDB" stroke-width="5" opacity="0.18" />
+        <path d="M88 136a24 24 0 0 1 20.8 36" stroke="#5B4BDB" stroke-width="5"
+              stroke-linecap="round" />
+      </svg>
+    </div>
+
+    <h1 class="claim">Built for the minute <em>between sets</em>.</h1>
+
+    <p class="sub">Last time's numbers already in place, and a rest timer that fires with the screen locked.</p>
+
+    <ul class="points">
+      <li>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="#5B4BDB" opacity="0.14" />
+          <path d="M6 10.4l2.6 2.6L14 7.6" stroke="#5B4BDB" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Push, Pull, Legs, ready to start
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="#5B4BDB" opacity="0.14" />
+          <path d="M6 10.4l2.6 2.6L14 7.6" stroke="#5B4BDB" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Records, 1RM and volume
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="#5B4BDB" opacity="0.14" />
+          <path d="M6 10.4l2.6 2.6L14 7.6" stroke="#5B4BDB" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        A PDF report for your coach
+      </li>
+    </ul>
+
+    <div class="rule"></div>
+    <p class="foot">Android · Italiano · English</p>
+  </body>
+</html>

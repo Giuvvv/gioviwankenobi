@@ -1,0 +1,21 @@
+---
+import type { GetStaticPaths } from 'astro';
+import LegalDocument from '~/components/site/LegalDocument.astro';
+import { getLegalForScope } from '~/utils/apps';
+import { siteConfig } from '~/config/site';
+
+/** Translations of the site-wide documents, for example /it/privacy. */
+export const getStaticPaths = (async () => {
+  const siblings = await getLegalForScope('site');
+  return siblings
+    .filter((r) => r.locale !== siteConfig.defaultLocale)
+    .map((doc) => ({
+      params: { locale: doc.locale, doc: doc.kind },
+      props: { doc, siblings },
+    }));
+}) satisfies GetStaticPaths;
+
+const { doc, siblings } = Astro.props;
+---
+
+<LegalDocument doc={doc} siblings={siblings} />

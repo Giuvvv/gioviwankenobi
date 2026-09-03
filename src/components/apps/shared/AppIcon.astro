@@ -1,0 +1,42 @@
+---
+import { Image } from 'astro:assets';
+import { appImage } from '~/utils/images';
+
+export interface Props {
+  src: string;
+  name: string;
+  /** Rendered size in px. The source is downscaled to 2x this. */
+  size?: number;
+  loading?: 'lazy' | 'eager';
+  class?: string;
+}
+
+const { src, name, size = 64, loading = 'lazy', class: className = '' } = Astro.props;
+const image = appImage(src);
+---
+
+<Image
+  class:list={['app-icon', className]}
+  src={image}
+  alt={`${name} app icon`}
+  width={size * 2}
+  height={size * 2}
+  widths={[size, size * 2, 1024]}
+  sizes={`${size}px`}
+  quality={92}
+  loading={loading}
+  decoding="async"
+  style={`--icon-size:${size}px`}
+/>
+
+<style>
+  .app-icon {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    /* App icons are the one rounded thing on this site: they keep the radius
+       their own platform gives them. */
+    border-radius: var(--radius-icon);
+    border: var(--border) solid color-mix(in srgb, var(--ink) 12%, transparent);
+    flex: none;
+  }
+</style>

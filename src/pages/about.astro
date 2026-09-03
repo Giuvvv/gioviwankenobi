@@ -1,0 +1,223 @@
+---
+import { Icon } from 'astro-icon/components';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import PageHeader from '~/components/site/PageHeader.astro';
+import { siteConfig, activeSocials, supportEmail } from '~/config/site';
+import { mailto, realAddress } from '~/utils/contact';
+import { url } from '~/utils/paths';
+
+const contactHref = mailto(supportEmail);
+const contactLabel = realAddress(supportEmail);
+
+---
+
+<BaseLayout
+  title="About"
+  description={`About ${siteConfig.name}, an independent software developer.`}
+>
+  <PageHeader
+    title="About"
+    lede="One person, writing software independently. This is the longer version."
+  />
+
+  <section class="section section--tight section-divider" aria-labelledby="bio">
+    <div class="wrap">
+      <h2 id="bio" class="visually-hidden">Biography</h2>
+
+      <div class="prose about__body">
+        <p>I build the apps I need.</p>
+        <p>
+          Every one of them started because I wanted it and could not find it,
+          or found it buried under a dozen things I did not want. That is the
+          whole method: I am the first user, and an app has to survive my own
+          daily use before it is worth anyone else's.
+        </p>
+        <p>
+          So nothing is complicated for the sake of it. One job, done properly.
+          No account before you can begin, no tour of the features, no setting
+          added because some other app has it. If a thing can be left out and
+          the app still does what it is for, it gets left out.
+        </p>
+        <p>Fast counts as a feature.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tight section-divider" aria-labelledby="contact">
+    <div class="wrap">
+      <h2 id="contact">Get in touch</h2>
+
+      {
+        contactHref && contactLabel ? (
+          <p class="about__contact">
+            <span class="copy">
+              <button class="btn btn--primary" type="button" data-copy={contactLabel}>
+                <Icon name="ph:envelope-simple" aria-hidden="true" />
+                {contactLabel}
+              </button>
+              {/* Empty until something happens, so it announces only then. */}
+              <span class="copy__flag" data-copied role="status" aria-live="polite" />
+            </span>
+          </p>
+        ) : (
+          <p class="notice about__todo">
+            <strong>No address yet.</strong> Email for <code>{siteConfig.domain}</code> is not
+            set up yet. Fill in <code>TODO_CONTACT_EMAIL</code> inside the site config and the
+            address appears here, in the footer and on every app page.
+          </p>
+        )
+      }
+
+      {
+        activeSocials.length > 0 && (
+          <ul class="about__socials">
+            {activeSocials.map((social) => (
+              <li>
+                <a class="link link--quiet" href={social.href} rel="me noopener">
+                  <Icon name={social.icon} aria-hidden="true" />
+                  {social.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      <p class="about__apps">
+        Looking for a specific app? The <a class="link" href={url('/apps')}>catalog</a> lists
+        everything, with support and policy links on each page.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /*
+   * A button, not a link: it copies rather than navigates, and dressing a
+   * button as a link would promise something it no longer does. The address
+   * stays visible on the face of it, so it can still be read and typed.
+   */
+  .copy {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .copy__flag {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 0.55rem);
+    padding: 0.3em 0.7em;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: var(--radius);
+    background: var(--plate);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.9;
+    translate: -50% 4px;
+    transition: opacity 160ms var(--ease), scale 160ms var(--ease),
+      translate 160ms var(--ease);
+  }
+
+  .copy__flag[data-on] {
+    opacity: 1;
+    scale: 1;
+    translate: -50% 0;
+  }
+
+  /* A little overshoot on the way in; the transition above handles the way
+     out, and reduced motion gets the plain fade from it instead. */
+  @media (prefers-reduced-motion: no-preference) {
+    .copy__flag[data-on] { animation: copy-pop 280ms var(--ease); }
+  }
+
+  @keyframes copy-pop {
+    0% { opacity: 0; scale: 0.8; translate: -50% 7px; }
+    58% { opacity: 1; scale: 1.07; translate: -50% -2px; }
+    100% { opacity: 1; scale: 1; translate: -50% 0; }
+  }
+
+  .about__todo { max-width: 62ch; }
+
+  .about__body { margin-block-start: var(--space-l); font-size: var(--step-1); }
+
+  .about__contact { margin-block-start: var(--space-l); }
+
+  .about__socials {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-l) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-m);
+  }
+
+  .about__socials :global(svg) { margin-inline-end: 0.3em; }
+
+  .about__apps {
+    margin-block-start: var(--space-xl);
+    color: var(--ink-muted);
+    max-width: 52ch;
+  }
+</style>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-copy]');
+  const flag = document.querySelector<HTMLElement>('[data-copied]');
+
+  if (button && flag) {
+    let hide = 0;
+
+    async function put(text: string) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        /*
+         * The clipboard API needs a secure context and a permission the
+         * browser can refuse. Where it does, the old selection trick still
+         * works, so fall back to it rather than leaving the button dead.
+         */
+        try {
+          const pad = document.createElement('textarea');
+          pad.value = text;
+          pad.setAttribute('readonly', '');
+          pad.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+          document.body.appendChild(pad);
+          pad.select();
+          const legacy = (document as unknown as Record<string, unknown>)['execCommand'];
+          const ok =
+            typeof legacy === 'function'
+              ? (legacy as (c: string) => boolean).call(document, 'copy')
+              : false;
+          pad.remove();
+          return ok;
+        } catch {
+          return false;
+        }
+      }
+    }
+
+    button.addEventListener('click', async () => {
+      const ok = await put(button.dataset.copy ?? '');
+      // Never claim success that did not happen: the address is on the button,
+      // and a reader who thinks they have it would paste nothing.
+      flag.textContent = ok ? 'Copied' : 'Copy failed';
+
+      // Restart the animation when the button is pressed again.
+      flag.removeAttribute('data-on');
+      void flag.offsetWidth;
+      flag.setAttribute('data-on', '');
+
+      clearTimeout(hide);
+      hide = window.setTimeout(() => flag.removeAttribute('data-on'), 1600);
+    });
+  }
+</script>

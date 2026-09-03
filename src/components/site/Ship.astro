@@ -1,0 +1,1359 @@
+---
+/**
+ * A small ship you drag around the sky, and fly behind the page with WASD.
+ *
+ * Deliberately provisional: `siteConfig.experiments.ship` set to false stops
+ * this rendering at all, rather than hiding it with CSS.
+ *
+ * The illusion is that the site is one enormous panel hanging in space and you
+ * are a very small thing flying behind it. Three things carry that, and none
+ * of them is a mirror:
+ *
+ *   - scale. The panel is blown up around the character the ship was left on,
+ *     so you arrive among huge white surfaces and only work out what they
+ *     spell by flying along them. Park it over the footer and the footer is
+ *     what you arrive in.
+ *   - travel. The panel is rigid and undistorted; what moves is you, sliding
+ *     across a surface far too big to see at once.
+ *   - the warp. The stars streak, the ship fills the screen and a flash covers
+ *     the cut, so the two scenes read as one continuous move.
+ *
+ * The ship is aria-hidden and not focusable on purpose. Landing behind a
+ * mirrored page by accident, with no idea how to get out, is not a surprise
+ * worth giving anyone. The way out is a real button and the Escape key.
+ */
+import { siteConfig } from '~/config/site';
+
+const enabled = siteConfig.experiments.ship;
+---
+
+{
+  enabled && (
+    <>
+      <div class="ship" data-ship aria-hidden="true">
+        <svg viewBox="0 0 24 28" width="26" height="30" focusable="false">
+          <path
+            class="ship__hull"
+            d="M12 0.6 L22.4 24.4 Q12 12.6 1.6 24.4 Z"
+          />
+          <path
+            class="ship__canopy"
+            d="M12 4.6 Q14.3 7.9 12 11 Q9.7 7.9 12 4.6 Z"
+          />
+          <circle class="ship__thruster" cx="12" cy="15.8" r="1.25" />
+        </svg>
+      </div>
+
+      <div class="keys" data-keys aria-hidden="true">
+        <span class="keys__cap" data-key="w">W</span>
+        <span class="keys__cap" data-key="a">A</span>
+        <span class="keys__cap" data-key="s">S</span>
+        <span class="keys__cap" data-key="d">D</span>
+        <span class="keys__label">fly</span>
+
+        <span class="keys__cap keys__cap--throttle" data-key="e">
+          <span class="keys__letter">E</span>
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" focusable="false">
+            <path
+              d="M3.6 7.6 8 3.2l4.4 4.4M3.6 12.8 8 8.4l4.4 4.4"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+        <span class="keys__cap keys__cap--throttle" data-key="q">
+          <span class="keys__letter">Q</span>
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" focusable="false">
+            <path
+              d="M3.6 3.2 8 7.6l4.4-4.4M3.6 8.4 8 12.8l4.4-4.4"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+        <span class="keys__label keys__label--throttle">closer</span>
+      </div>
+
+      <div class="flash" data-flash aria-hidden="true" />
+
+      <div class="hud" data-hud hidden>
+        <div class="hud__frame" aria-hidden="true" />
+        <p class="hud__hint" aria-hidden="true" data-hint>WASD to fly</p>
+        <button class="hud__exit" type="button" data-exit>Return</button>
+      </div>
+    </>
+  )
+}
+
+<style>
+  .ship {
+    /*
+     * Absolute, not fixed: the ship belongs to a point in the page, not to a
+     * corner of the screen. Scrolling leaves it behind the way an object
+     * adrift would be left behind; the only thing that moves it is a hand.
+     */
+    position: absolute;
+    z-index: var(--z-cursor);
+    left: 0;
+    top: 0;
+    color: var(--accent);
+    cursor: grab;
+    touch-action: none;
+    transform-origin: 50% 55%;
+    translate: var(--x, 72vw) var(--y, 58vh);
+    rotate: var(--bank, 0deg);
+    scale: var(--scale, 1);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 55%, transparent))
+      blur(var(--blur-amount, 0px));
+    transition: scale 220ms var(--ease);
+  }
+
+  /* Hidden for the whole flight: from the cockpit you are the pilot, not a
+     spectator watching your own ship. Stated outright so no later display
+     rule can bring it back. */
+  .ship[hidden] { display: none; }
+
+  .ship:hover { --scale: 1.18; }
+  .ship[data-dragging] { cursor: grabbing; --scale: 1.06; transition: none; }
+
+  /*
+   * While flying, every value is written per frame. The glow goes with it:
+   * drop-shadow renders the element a second time, and during the warp the
+   * ship grows to forty-seven times its size while blurring, so that second
+   * rendering is paid on an enormous surface for something the blur has
+   * already swallowed.
+   */
+  .ship[data-flying] {
+    transition: none;
+    filter: blur(var(--blur-amount, 0px));
+  }
+
+  /*
+   * Three shapes and no more, because at 26 pixels a fourth would only turn to
+   * mud. The hull is a delta whose trailing edge curves forward, which is what
+   * reads as swept wings rather than as an arrowhead; the notch it leaves in
+   * the middle is where the engine sits. The canopy is a hole punched in the
+   * gold rather than a lighter mark on top of it, so the ship keeps a single
+   * colour and still has a front and a back.
+   */
+  .ship__hull { fill: currentColor; opacity: 0.94; }
+  .ship__canopy { fill: var(--void); opacity: 0.5; }
+  /* Was pure white, which is not a colour this site owns. */
+  .ship__thruster { fill: var(--ink); opacity: 0.92; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ship:not([data-flying]):not([data-dragging]) {
+      animation: drift 9s ease-in-out infinite;
+    }
+  }
+
+  /* A slow bob, so it reads as floating rather than stuck to the page. */
+  @keyframes drift {
+    0%, 100% { rotate: -4deg; }
+    50% { rotate: 4deg; }
+  }
+
+  /* --- the controls ------------------------------------------------------- */
+
+  /*
+   * Only shown from the cockpit. Out on the page the ship can simply be
+   * grabbed, so nothing needs explaining; behind the panel there is no ship
+   * left to grab and the keys are the whole interface. Each cap lights as it
+   * is held, which doubles as the only feedback that the input landed.
+   */
+  .keys {
+    position: fixed;
+    left: var(--space-m);
+    bottom: var(--space-m);
+    z-index: var(--z-cursor);
+    display: grid;
+    /* Three for the direction pad, a gutter, one for the throttle. The last
+       is wider because those caps name their key beside the arrow: an arrow
+       on its own says what it does but not what to press. */
+    grid-template-columns: repeat(3, 2em) 0.7em 3.5em;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--ink-faint);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 700ms var(--ease) 400ms;
+  }
+
+  .keys__cap {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    /* The cluster is fixed, so it sits over whatever the page has scrolled to.
+       Its own ground keeps it readable against text as well as sky. */
+    background: rgba(11, 10, 8, 0.72);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    transition: color 110ms var(--ease), background-color 110ms var(--ease),
+      border-color 110ms var(--ease);
+  }
+
+  /* Every cap placed outright: auto-placement filled the first row with W and
+     A instead of standing A, S and D under the W. */
+  .keys__cap[data-key='w'] { grid-column: 2; grid-row: 1; }
+  .keys__cap[data-key='a'] { grid-column: 1; grid-row: 2; }
+  .keys__cap[data-key='s'] { grid-column: 2; grid-row: 2; }
+  .keys__cap[data-key='d'] { grid-column: 3; grid-row: 2; }
+  .keys__cap[data-key='e'] { grid-column: 5; grid-row: 1; }
+  .keys__cap[data-key='q'] { grid-column: 5; grid-row: 2; }
+
+  .keys__cap[data-on] {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .keys__label {
+    grid-column: 1 / 4;
+    grid-row: 3;
+    text-shadow: 0 1px 3px var(--void), 0 0 8px var(--void);
+    margin-block-start: 0.4em;
+    font-size: var(--step--2);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .keys__label--throttle {
+    grid-column: 5;
+    grid-row: 3;
+    justify-self: start;
+  }
+
+  .keys__cap--throttle {
+    aspect-ratio: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3em;
+    color: var(--ink-muted);
+  }
+
+  /* The arrow reads at a glance; the letter only has to be findable. */
+  .keys__letter { font-size: 0.82em; opacity: 0.85; }
+  .keys__cap--throttle[data-on] { color: var(--accent-ink); }
+
+  /* Nothing left to give: the throttle is against its stop. */
+  .keys__cap--throttle[data-spent] { opacity: 0.3; }
+
+  /* The cluster belongs to the cockpit, and arrives with the rest of it. */
+  :global(html[data-behind]) .keys { opacity: 1; }
+
+  /* --- the cut ------------------------------------------------------------ */
+
+  .flash {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-skiplink);
+    pointer-events: none;
+    opacity: 0;
+    /* Full screen, and its opacity moves every frame of the warp. On its own
+       layer that is a composite; without one it is a full-screen repaint. */
+    will-change: opacity;
+    background: radial-gradient(
+      60% 60% at 50% 50%,
+      color-mix(in srgb, var(--accent) 85%, #fff) 0%,
+      var(--accent) 35%,
+      #000 100%
+    );
+  }
+
+  /* --- inside ------------------------------------------------------------- */
+
+  .hud {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-header);
+    pointer-events: none;
+  }
+
+  .hud[hidden] { display: none; }
+
+  /* A suggestion of a canopy: darkened edges and a hairline, nothing more. */
+  .hud__frame {
+    position: absolute;
+    inset: 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+    border-radius: 42% 42% 20% 20% / 24% 24% 12% 12%;
+    box-shadow: inset 0 0 180px rgba(6, 5, 4, 0.92);
+    opacity: 0;
+    transition: opacity 900ms var(--ease) 200ms;
+  }
+
+  .hud__hint {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(var(--header-height) + var(--space-m));
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    opacity: 0;
+    transition: opacity 700ms var(--ease);
+  }
+
+  .hud__exit {
+    position: absolute;
+    inset-inline: 0;
+    margin-inline: auto;
+    bottom: var(--space-l);
+    width: max-content;
+    pointer-events: auto;
+    padding: 0.6em 1.4em;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    border-radius: var(--radius);
+    background: rgba(11, 10, 8, 0.7);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    color: var(--ink-muted);
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 700ms var(--ease) 500ms,
+      background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+  }
+
+  .hud__exit:hover {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+  }
+
+  :global(html[data-behind]) .hud__frame,
+  :global(html[data-behind]) .hud__hint,
+  :global(html[data-behind]) .hud__exit { opacity: 1; }
+
+  /* The hint has said its piece after a few seconds. */
+  :global(html[data-behind]) .hud__hint[data-quiet] { opacity: 0; }
+
+  /* No ship on touch, where dragging fights the scroll. */
+  @media (pointer: coarse) {
+    .ship, .hud, .flash, .keys { display: none; }
+  }
+</style>
+
+<script>
+  const ship = document.querySelector<HTMLElement>('[data-ship]');
+  const hud = document.querySelector<HTMLElement>('[data-hud]');
+  const hint = document.querySelector<HTMLElement>('[data-hint]');
+  const flash = document.querySelector<HTMLElement>('[data-flash]');
+  const exitButton = document.querySelector<HTMLButtonElement>('[data-exit]');
+  const world = document.querySelector<HTMLElement>('[data-world]');
+  const keypad = document.querySelector<HTMLElement>('[data-keys]');
+  const fine = window.matchMedia('(pointer: fine)').matches;
+  const root = document.documentElement;
+
+  if (ship && hud && hint && flash && exitButton && world && keypad && fine) {
+    const craft = ship;
+    const panel = world;
+    const veil = flash;
+    const cockpit = hud;
+    const caption = hint;
+    const returnButton = exitButton;
+    const pad = keypad;
+
+    const still = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /*
+     * How far the panel is blown up once you are behind it. Set per arrival
+     * from the size of the type you fly into, so a headline and a footnote
+     * both land with the same weight instead of the second one arriving as a
+     * smudge. The nameplate's own size reproduces the 7.5x this started as.
+     */
+    let behindScale = 7.5;
+    const ARRIVAL_HEIGHT = 1030;
+
+    /*
+     * How close the throttle may bring you, and how far it may take you back.
+     * The floor is deliberately well clear of 1: pulled all the way out you
+     * are still among oversized letters, never looking at the site as it
+     * normally reads. Coming back out is what the Return button is for.
+     */
+    const ZOOM_MIN = 3;
+    const ZOOM_MAX = 20;
+    /** One tap of the throttle. */
+    const ZOOM_STEP = 1.18;
+    /** Held down, per frame. Roughly a doubling a second. */
+    const ZOOM_RATE = 1.012;
+    /** How hard the ship chases the throttle setting. */
+    const ZOOM_EASE = 0.12;
+
+    /** Where the ship is, and where the throttle is asking it to be. */
+    let scaleNow = 7.5;
+    let scaleTarget = 7.5;
+
+    /*
+     * Camera feel. The keys are the only thing that flies the panel: letting
+     * the pointer steer as well meant the view swung about under a hand that
+     * was only crossing the screen, which is most of what made it feel
+     * random. The easing is what turns a held key into momentum.
+     */
+    const EASE = 0.1;
+    const IN_MS = 700;
+    const OUT_MS = 560;
+
+    type Mode = 'idle' | 'in' | 'behind' | 'out';
+    let mode: Mode = 'idle';
+
+    const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
+    /* ---------------------------------------------------------- the ship -- */
+
+    /*
+     * Where the ship sits, in page coordinates. Deliberately not remembered
+     * between visits: a reload is a fresh start and puts it back where it
+     * belongs. Within a visit it stays wherever it was last left, including
+     * across a trip behind the page.
+     */
+    let x = window.innerWidth * 0.72;
+    let y = window.innerHeight * 0.58;
+    /* Where it was when it was clicked, so the flight can give it back. */
+    let parkedX = x;
+    let parkedY = y;
+
+    function drawShip(scale = 1, bank = 0, blur = 0, opacity = 1) {
+      craft.style.setProperty('--x', `${x}px`);
+      craft.style.setProperty('--y', `${y}px`);
+      craft.style.setProperty('--scale', `${scale}`);
+      craft.style.setProperty('--bank', `${bank}deg`);
+      craft.style.setProperty('--blur-amount', `${blur}px`);
+      craft.style.opacity = `${opacity}`;
+    }
+
+    /* The page, not the screen: the ship may be left anywhere in the document. */
+    const bounds = () => ({
+      w: Math.max(window.innerWidth, document.documentElement.scrollWidth),
+      h: Math.max(window.innerHeight, document.documentElement.scrollHeight),
+    });
+
+    function park() {
+      const b = bounds();
+      x = clamp(x, 8, b.w - 40);
+      y = clamp(y, 8, b.h - 40);
+      craft.style.setProperty('--x', `${x}px`);
+      craft.style.setProperty('--y', `${y}px`);
+    }
+
+    park();
+    window.addEventListener('resize', () => {
+      if (mode === 'idle') { park(); return; }
+      if (mode !== 'behind') return;
+      // Let the panel back to its natural width so it reflows to the new
+      // window, take the anchor from that, then pin and magnify again.
+      setZoom(false);
+      anchorWidth = panel.offsetWidth;
+      anchorHeight = panel.offsetHeight;
+      remeasureFromLayout();
+      setZoom(true);
+      applyZoomed(camX, camY);
+    }, { passive: true });
+
+    /* -------------------------------------------------------- the camera -- */
+
+    /*
+     * Where the panel is pinned while it grows: the seam between the w and the
+     * a of the nameplate. Arriving there means the first thing on screen is
+     * two white walls, not a readable word.
+     */
+    let originX = 0;
+    let originY = 0;
+    let baseX = 0;
+    let baseY = 0;
+    // Where the anchor sits inside the nameplate, as a fraction of its box.
+    // Fractions survive a resize; absolute pixels do not, because the
+    // nameplate is sized in vw.
+    let anchor: HTMLElement | null = null;
+    let seamFx = 0.5;
+    let seamFy = 0.5;
+    /* The panel's layout width when the anchor was measured. */
+    let anchorWidth = 0;
+    let anchorHeight = 0;
+    let camX = 0;
+    let camY = 0;
+    let aimX = 0;
+    let aimY = 0;
+
+    /** The character sitting under a screen point, if there is one. */
+    function textAt(sx: number, sy: number) {
+      const doc = document as Document & {
+        caretPositionFromPoint?: (
+          x: number,
+          y: number,
+        ) => { offsetNode: Node; offset: number } | null;
+      };
+      try {
+        if (doc.caretPositionFromPoint) {
+          const p = doc.caretPositionFromPoint(sx, sy);
+          if (p) return { node: p.offsetNode, offset: p.offset };
+        }
+        // The older WebKit spelling of the same thing, reached without naming
+        // it outright so its deprecation does not become a build hint.
+        const legacy = (doc as unknown as Record<string, unknown>)[
+          'caretRangeFromPoint'
+        ];
+        if (typeof legacy === 'function') {
+          const r = (legacy as (x: number, y: number) => Range | null).call(doc, sx, sy);
+          if (r) return { node: r.startContainer, offset: r.startOffset };
+        }
+      } catch {
+        /* Unsupported, or the point is outside the document. */
+      }
+      return null;
+    }
+
+    /** The nearest run of text, for when the ship is parked over empty sky. */
+    function nearestText(sx: number, sy: number) {
+      const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) =>
+          (n.textContent ?? '').trim().length > 1
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT,
+      });
+      const range = document.createRange();
+      let best: { node: Node; offset: number } | null = null;
+      let bestD = Infinity;
+      let seen = 0;
+      for (let n = walker.nextNode(); n && seen < 400; n = walker.nextNode()) {
+        seen++;
+        range.selectNodeContents(n);
+        const r = range.getBoundingClientRect();
+        if (!r.width || !r.height) continue;
+        const d = Math.hypot(
+          Math.max(r.left - sx, 0, sx - r.right),
+          Math.max(r.top - sy, 0, sy - r.bottom),
+        );
+        if (d < bestD) {
+          bestD = d;
+          best = { node: n, offset: Math.floor((n.textContent ?? '').length / 2) };
+          if (d < 24) break;
+        }
+      }
+      return best;
+    }
+
+    function measure() {
+      const rect = panel.getBoundingClientRect();
+      // The ship's own centre, on screen. Whatever is written there is what
+      // you fly into: leave it over the footer and the footer is what you
+      // arrive among.
+      const sx = x - window.scrollX + 13;
+      const sy = y - window.scrollY + 15;
+
+      let px = rect.left + rect.width / 2;
+      let py = rect.top + Math.min(rect.height, window.innerHeight) / 2;
+      let target: HTMLElement | null = null;
+      let fontSize = 0;
+
+      // The ship sits exactly on the point being probed, so it would hit-test
+      // itself and every arrival would land on its own hull.
+      const heldEvents = craft.style.pointerEvents;
+      craft.style.pointerEvents = 'none';
+      let hit = textAt(sx, sy);
+      craft.style.pointerEvents = heldEvents;
+
+      const usable =
+        hit &&
+        hit.node.nodeType === Node.TEXT_NODE &&
+        panel.contains(hit.node) &&
+        (hit.node.textContent ?? '').trim().length > 1;
+      if (!usable) hit = nearestText(sx, sy);
+
+      if (hit && hit.node.nodeType === Node.TEXT_NODE) {
+        const content = hit.node.textContent ?? '';
+        try {
+          // A Range measures individual characters, which is the only way to
+          // aim between two letters rather than at a whole word.
+          const range = document.createRange();
+          const from = clamp(hit.offset, 0, Math.max(0, content.length - 2));
+          range.setStart(hit.node, from);
+          range.setEnd(hit.node, Math.min(content.length, from + 2));
+          const r = range.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            px = r.left + r.width / 2;
+            py = r.top + r.height * 0.55;
+            target = hit.node.parentElement;
+            fontSize = parseFloat(getComputedStyle(target ?? panel).fontSize) || 0;
+          }
+        } catch {
+          /* Fall back to the middle of the panel. */
+        }
+      }
+
+      // Capped low: the panel is rasterised once and then magnified, so past
+      // roughly fourteen times the type turns to mush. Small text arrives
+      // smaller than a headline would, and stays legible.
+      behindScale = fontSize ? clamp(ARRIVAL_HEIGHT / fontSize, 5, 14) : 7.5;
+
+      anchor = target;
+      if (target) {
+        const pr = target.getBoundingClientRect();
+        if (pr.width) seamFx = (px - pr.left) / pr.width;
+        if (pr.height) seamFy = (py - pr.top) / pr.height;
+      }
+
+      anchorWidth = panel.offsetWidth;
+      anchorHeight = panel.offsetHeight;
+      originX = px - rect.left;
+      originY = py - rect.top;
+      // Bring that point to the middle of the screen.
+      baseX = window.innerWidth / 2 - px;
+      baseY = window.innerHeight / 2 - py;
+    }
+
+    /*
+     * Magnifying with `transform: scale` rasterises the panel once and then
+     * stretches that one bitmap, and this panel is 1905x3454: at 7.5x the
+     * texture would be 370 megapixels, far past what the compositor will
+     * rasterise, so it quietly rasters at a lower scale and upsamples. That is
+     * the blur. `zoom` lays the page out at the larger size instead, so glyphs
+     * are rasterised at the size they are actually shown, and the type comes
+     * out sharp.
+     *
+     * The catch is that zoom shrinks the containing block, and the page would
+     * re-wrap into a narrow column. Pinning the layout width to what the
+     * anchor was measured against keeps the layout identical and lets zoom do
+     * nothing but magnify.
+     *
+     * It is only used at rest. Changing zoom is a full relayout, so the warp
+     * itself still animates with scale, where nobody can read the type anyway.
+     */
+    let zoomed = false;
+
+    /* The page's own blocks: the sections inside main, plus the footer. */
+    function blocks() {
+      const list: HTMLElement[] = [];
+      for (const child of Array.from(panel.children) as HTMLElement[]) {
+        if (child.tagName === 'MAIN') {
+          list.push(...(Array.from(child.children) as HTMLElement[]));
+        } else {
+          list.push(child);
+        }
+      }
+      return list;
+    }
+
+    /*
+     * Done once on arrival and undone once on the way out, because both halves
+     * would otherwise be redone every time the throttle moves.
+     *
+     * Magnified, the page is some 14000 by 25000 pixels, and rasterising type
+     * at that size is what made flying expensive. Almost none of it is ever on
+     * screen, so each block is told it may be skipped while out of view; its
+     * measured size is pinned first, or a skipped block would collapse to
+     * nothing and drag the rest of the page past the anchor.
+     *
+     * Images need the opposite treatment. Type is drawn from outlines and
+     * redraws sharp at any size; a photograph cannot. The browser picks which
+     * file to fetch from the layout width and never revisits that choice when
+     * the page is magnified, so a screenshot chosen at 272px was still 272px
+     * while being shown at 2040. Asking for a far wider size makes it pick the
+     * largest file there is, which is the ceiling: past the resolution the
+     * original was saved at, nothing can be recovered.
+     */
+    function prepare(on: boolean) {
+      for (const el of blocks()) {
+        if (on) {
+          el.style.containIntrinsicSize = `${el.offsetWidth}px ${el.offsetHeight}px`;
+          el.style.contentVisibility = 'auto';
+        } else {
+          el.style.contentVisibility = '';
+          el.style.containIntrinsicSize = '';
+        }
+      }
+      for (const img of Array.from(
+        panel.querySelectorAll<HTMLImageElement>('img[sizes]'),
+      )) {
+        if (on) {
+          if (img.dataset.sizes === undefined) img.dataset.sizes = img.sizes;
+          img.sizes = '3000px';
+        } else if (img.dataset.sizes !== undefined) {
+          img.sizes = img.dataset.sizes;
+        }
+      }
+    }
+
+    function setZoom(on: boolean) {
+      if (on === zoomed) return;
+      zoomed = on;
+      if (on) {
+        panel.style.width = `${anchorWidth}px`;
+        panel.style.flex = 'none';
+        panel.style.zoom = String(behindScale);
+      } else {
+        panel.style.zoom = '';
+        panel.style.width = '';
+        panel.style.flex = '';
+      }
+    }
+
+    /** applyWorld's counterpart for the zoomed panel: transforms are local px. */
+    function applyZoomed(offX: number, offY: number) {
+      const z = behindScale;
+      const bx = (window.innerWidth / 2 + window.scrollX + offX) / z - originX;
+      const by = (window.innerHeight / 2 + window.scrollY + offY) / z - originY;
+      panel.style.transformOrigin = `${originX}px ${originY}px`;
+      panel.style.transform =
+        `translate3d(${bx}px, ${by}px, 0) rotateY(180deg)`;
+    }
+
+    /* Layout position relative to the document, free of every transform. */
+    function layoutOffset(el: HTMLElement) {
+      let x = 0;
+      let y = 0;
+      let node: HTMLElement | null = el;
+      while (node) {
+        x += node.offsetLeft;
+        y += node.offsetTop;
+        node = node.offsetParent as HTMLElement | null;
+      }
+      return { x, y };
+    }
+
+    /*
+     * Re-derive the anchor after a resize, without reading a single client
+     * rect. While the world is scaled and mirrored those rects come back
+     * transformed, and clearing the transform to get clean ones changes the
+     * very layout being measured: it moves the anchor by a few pixels, and
+     * the mirror then multiplies that error by twice the scale. Seven pixels
+     * of drift became fifty-six on screen. offsetLeft and offsetWidth are
+     * pure layout, so the fractions captured by measure() replay onto them
+     * exactly.
+     */
+    function remeasureFromLayout() {
+      const plate = anchor;
+      if (!plate) return;
+      const p = layoutOffset(plate);
+      const w = layoutOffset(panel);
+      originX = p.x - w.x + seamFx * plate.offsetWidth;
+      originY = p.y - w.y + seamFy * plate.offsetHeight;
+      baseX = window.innerWidth / 2 - (w.x - window.scrollX + originX);
+      baseY = window.innerHeight / 2 - (w.y - window.scrollY + originY);
+    }
+
+    /*
+     * The panel is a flat surface seen square on, and it stays that way. It
+     * used to yaw and pitch as the camera moved off centre, on the theory
+     * that foreshortening would sell the depth. In practice it sheared the
+     * page into a trapezoid and stretched the letters, which reads as the
+     * words deforming rather than as the ship moving past them. The only
+     * rotation left is the half turn that puts you behind the page.
+     */
+    function applyWorld(scale: number, offX: number, offY: number) {
+      panel.style.transformOrigin = `${originX}px ${originY}px`;
+      panel.style.transform =
+        `translate3d(${baseX + offX}px, ${baseY + offY}px, 0) ` +
+        `rotateY(180deg) scale(${scale})`;
+    }
+
+    /*
+     * True from the moment the panel flips to the moment it flips back. The
+     * sky reads this to mirror itself and to put the constellations out, so
+     * it deliberately does not track `mode`: leave() moves to 'out' at the
+     * very start of the exit, and the sky has to stay mirrored for the whole
+     * of it, flipping back only under the flash.
+     */
+    let mirrored = false;
+
+    let veilAt = -1;
+    function setVeil(v: number) {
+      const next = Math.round(v * 100) / 100;
+      if (next === veilAt) return;
+      veilAt = next;
+      veil.style.opacity = `${next}`;
+    }
+
+    const warp = (amount: number) =>
+      document.dispatchEvent(
+        new CustomEvent('warp', { detail: { amount, behind: mirrored } }),
+      );
+
+    /* -------------------------------------------------------- the flight -- */
+
+    let raf = 0;
+    let hintTimer = 0;
+
+    function fly() {
+      // The pointer sets the aim, the keys push it. Either one flies, and the
+      // keys keep going where the pointer runs out of window.
+      const t = thrust();
+      if (t.on) {
+        const lim = aimLimits();
+        aimX = clamp(aimX - t.ax * stepX(), lim.xMin, lim.xMax);
+        aimY = clamp(aimY - t.ay * stepY(), lim.yMin, lim.yMax);
+      }
+      const dx = (aimX - camX) * EASE;
+      const dy = (aimY - camY) * EASE;
+      camX += dx;
+      camY += dy;
+
+      // Held throttle keeps winding the target on; a tap has already nudged it.
+      const dir = (held.has('e') ? 1 : 0) - (held.has('q') ? 1 : 0);
+      if (dir) {
+        scaleTarget = clamp(
+          dir > 0 ? scaleTarget * ZOOM_RATE : scaleTarget / ZOOM_RATE,
+          ZOOM_MIN,
+          ZOOM_MAX,
+        );
+        paintThrottle();
+      }
+
+      const gap = scaleTarget - scaleNow;
+      const closing = Math.abs(gap) > scaleNow * 0.0015;
+
+      if (closing) {
+        /*
+         * Closing in. The magnification is animated with a scale transform,
+         * which the compositor moves for nothing; committing it to the page's
+         * own layout is a reflow and cannot happen sixty times a second. So
+         * the ship rides a scaled texture while it is travelling and the page
+         * is laid out at the new size once it arrives. Type softens for the
+         * length of the move, which is the one moment it is least readable
+         * anyway.
+         */
+        const before = scaleNow;
+        rescale(scaleNow + gap * ZOOM_EASE);
+        setZoom(false);
+        applyWorld(scaleNow, camX, camY);
+        // Stars stretch with the change of speed, so the movement reads as the
+        // ship closing on the page rather than the page growing.
+        warp(Math.min(0.55, (Math.abs(scaleNow - before) / before) * 26));
+      } else {
+        if (scaleNow !== scaleTarget) rescale(scaleTarget);
+        if (behindScale !== scaleNow) {
+          behindScale = scaleNow;
+          if (zoomed) panel.style.zoom = String(behindScale);
+        }
+        if (!zoomed) warp(0);
+        /*
+         * Parked: the panel is laid out at size, so the type is drawn at the
+         * size it is shown rather than stretched from a bitmap.
+         */
+        setZoom(true);
+        applyZoomed(camX, camY);
+      }
+
+      if (mode === 'behind') raf = requestAnimationFrame(fly);
+    }
+
+    /* ---------------------------------------------------------- the warp -- */
+
+    const ease = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    /**
+     * Runs a timed move. The timeout finishes it even if frames never arrive,
+     * so the page can never be stranded half way through a warp.
+     */
+    function run(ms: number, step: (t: number) => void, done: () => void) {
+      const guard = window.setTimeout(() => { step(1); done(); }, ms + 400);
+      const startedAt = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - startedAt) / ms);
+        step(t);
+        if (t < 1) requestAnimationFrame(tick);
+        else { clearTimeout(guard); done(); }
+      };
+      requestAnimationFrame(tick);
+    }
+
+    function enter() {
+      if (mode !== 'idle') return;
+      mode = 'in';
+      // The flight moves the ship to the middle of the screen and hides it.
+      // This is the spot it has to be given back to on the way out.
+      parkedX = x;
+      parkedY = y;
+      measure();
+      root.setAttribute('data-warping', '');
+      craft.setAttribute('data-flying', '');
+
+      if (still()) { finishEnter(); return; }
+
+      run(
+        IN_MS,
+        (t) => {
+          const e = ease(t);
+          // The ship rushes at the viewer and blows out. The blur is rounded
+          // to whole pixels: a filter is re-rasterised whenever its value
+          // changes, and stepping it turns forty-odd of those into eight for
+          // a difference nobody can see through a blur.
+          drawShip(1 + e * 46, 0, Math.round(e * 12), 1 - Math.max(0, (t - 0.75) / 0.25));
+          warp(e);
+          // The veil is nought for three quarters of the warp; writing that
+          // nought again every frame still costs a style recalculation.
+          setVeil(t < 0.78 ? 0 : (t - 0.78) / 0.22);
+        },
+        finishEnter,
+      );
+    }
+
+    function finishEnter() {
+      mode = 'behind';
+      mirrored = true;
+      root.removeAttribute('data-warping');
+      root.setAttribute('data-behind', '');
+      cockpit.hidden = false;
+      void cockpit.offsetHeight;
+      scaleNow = behindScale;
+      scaleTarget = behindScale;
+      prepare(true);
+      paintThrottle();
+
+      camX = 0;
+      camY = 0;
+      aimX = 0;
+      aimY = 0;
+      // Screen centre, expressed in the page coordinates the ship lives in.
+      x = window.scrollX + window.innerWidth / 2 - 13;
+      y = window.scrollY + window.innerHeight / 2 - 15;
+      // The warp already blew the ship out; keep it gone. You are inside it.
+      craft.hidden = true;
+      applyWorld(behindScale, 0, 0);
+
+      returnButton.focus({ preventScroll: true });
+
+      caption.removeAttribute('data-quiet');
+      clearTimeout(hintTimer);
+      hintTimer = window.setTimeout(() => caption.setAttribute('data-quiet', ''), 4200);
+
+      if (still()) {
+        warp(0);
+        setVeil(0);
+        setZoom(true);
+        applyZoomed(0, 0);
+        return;
+      }
+
+      // The camera settles back a touch as the flash clears, so arriving has a
+      // beat instead of a hard cut.
+      run(
+        420,
+        (t) => {
+          setVeil(1 - t);
+          warp((1 - t) * 0.6);
+          applyWorld(behindScale * (1.14 - t * 0.14), 0, 0);
+        },
+        () => {
+          warp(0);
+          // The camera has stopped moving, so the relayout is affordable and
+          // the type stops being a stretched bitmap.
+          setZoom(true);
+          applyZoomed(camX, camY);
+          raf = requestAnimationFrame(fly);
+        },
+      );
+    }
+
+    function leave() {
+      if (mode !== 'behind') return;
+      mode = 'out';
+      cancelAnimationFrame(raf);
+      clearTimeout(hintTimer);
+      root.removeAttribute('data-behind');
+      root.setAttribute('data-warping', '');
+      cockpit.hidden = true;
+      craft.hidden = false;
+      // Back to the scale representation before anything animates: the exit
+      // changes magnification every frame, and zoom cannot do that cheaply.
+      setZoom(false);
+      applyWorld(behindScale, camX, camY);
+
+      if (still()) { finishLeave(); return; }
+
+      const fromX = camX;
+      const fromY = camY;
+      // The ship reappears where the cockpit was, at the middle of the screen,
+      // and settles back onto its own spot over the course of the exit. Simply
+      // putting it there at the end would be a jump, and by then the flash has
+      // already cleared and would not hide it.
+      const shipFromX = x;
+      const shipFromY = y;
+      run(
+        OUT_MS,
+        (t) => {
+          const e = ease(t);
+          // Out through the same door: streaks, flash, then the hero.
+          applyWorld(behindScale * (1 - e * 0.86), fromX * (1 - e), fromY * (1 - e));
+          warp(1 - Math.abs(t - 0.5) * 2);
+          setVeil(t < 0.5 ? t * 1.4 : Math.max(0, 1 - (t - 0.5) * 2.6));
+          // Climbing back out of the cockpit: the ship fades in as it shrinks
+          // to size, rather than popping back at full strength.
+          x = shipFromX + (parkedX - shipFromX) * e;
+          y = shipFromY + (parkedY - shipFromY) * e;
+          drawShip(1 + (1 - e) * 8, 0, Math.round((1 - e) * 7), Math.min(1, e * 1.7));
+        },
+        finishLeave,
+      );
+    }
+
+    function finishLeave() {
+      mode = 'idle';
+      mirrored = false;
+      craft.hidden = false;
+      setZoom(false);
+      prepare(false);
+      root.removeAttribute('data-warping');
+      panel.style.transform = '';
+      panel.style.transformOrigin = '';
+      warp(0);
+      setVeil(0);
+      craft.removeAttribute('data-flying');
+      craft.style.opacity = '1';
+      x = parkedX;
+      y = parkedY;
+      drawShip(1, 0, 0, 1);
+      park();
+    }
+
+    /* --------------------------------------------------------- the input -- */
+
+    /*
+     * Two jobs, two inputs. Out here the ship is an object on the page and the
+     * hand moves it directly. Behind the panel there is no ship left to grab,
+     * you are inside it, so it is flown with the keys.
+     */
+
+    let pointer: number | null = null;
+    let grabX = 0;
+    let grabY = 0;
+    let startX = 0;
+    let startY = 0;
+    let moved = 0;
+    // Set when a tap on the ship has already been spent on entering, so the
+    // click that the same gesture fires next does not read as "exit".
+    let swallowClick = false;
+    // Drift after release, in px per frame.
+    let vx = 0;
+    let vy = 0;
+    let glideRaf = 0;
+    let dragRaf = 0;
+    let lastMoveT = 0;
+
+    const held = new Set<string>();
+    const caps = pad.querySelectorAll<HTMLElement>('[data-key]');
+
+    /** Light the caps that are down. */
+    function paint() {
+      for (const cap of caps) {
+        cap.toggleAttribute('data-on', held.has(cap.dataset.key ?? ''));
+      }
+    }
+
+    /** Dim whichever end of the throttle has nothing left to give. */
+    function paintThrottle() {
+      for (const cap of caps) {
+        const k = cap.dataset.key;
+        if (k !== 'q' && k !== 'e') continue;
+        const spent =
+          k === 'e' ? scaleTarget >= ZOOM_MAX - 0.001 : scaleTarget <= ZOOM_MIN + 0.001;
+        cap.toggleAttribute('data-spent', spent);
+      }
+    }
+
+    /** The direction the keys are asking for, normalised. */
+    function thrust() {
+      let ax = 0;
+      let ay = 0;
+      if (held.has('w')) ay -= 1;
+      if (held.has('s')) ay += 1;
+      if (held.has('a')) ax -= 1;
+      if (held.has('d')) ax += 1;
+      const n = Math.hypot(ax, ay);
+      return n ? { ax: ax / n, ay: ay / n, on: true } : { ax: 0, ay: 0, on: false };
+    }
+
+    const EDGE = 90;
+
+    /*
+     * The site sets `scroll-behavior: smooth`, which turns every scrollBy into
+     * an animation. Asking for one per frame meant each request cancelled the
+     * last, so the page crawled a couple of pixels while the ship travelled a
+     * thousand. These scrolls have to land at once.
+     */
+    function scrollNow(dy: number) {
+      window.scrollBy({ top: dy, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+
+    /*
+     * Let go of something in microgravity and it keeps going. There is almost
+     * nothing to stop it, so the ship coasts on in the direction it was thrown
+     * and eases to rest rather than braking.
+     */
+    function glide() {
+      if (glideRaf) return;
+      const step = () => {
+        if (mode !== 'idle' || pointer !== null) { glideRaf = 0; return; }
+        x += vx;
+        y += vy;
+        park();
+        // park() clamps; a wall absorbs the drift instead of it pressing on.
+        const b = bounds();
+        if (x <= 8 || x >= b.w - 40) vx = 0;
+        if (y <= 8 || y >= b.h - 40) vy = 0;
+        // 0.95 coasted for some 240px, which overshoots whatever you were
+        // aiming at. Still microgravity, just a shorter leash.
+        vx *= 0.9;
+        vy *= 0.9;
+        if (Math.hypot(vx, vy) < 0.03) {
+          glideRaf = 0;
+          return;
+        }
+        glideRaf = requestAnimationFrame(step);
+      };
+      glideRaf = requestAnimationFrame(step);
+    }
+
+    /* Where the hand is, in the window. Page coordinates are derived from it
+       so that scrolling under a still pointer still moves the ship. */
+    let handX = 0;
+    let handY = 0;
+
+    function applyDrag(measureSpeed: boolean) {
+      const dx = handX + window.scrollX - startX;
+      const dy = handY + window.scrollY - startY;
+      moved = Math.max(moved, Math.hypot(dx, dy));
+      const prevX = x;
+      const prevY = y;
+      x = grabX + dx;
+      y = grabY + dy;
+      park();
+      if (!measureSpeed) return;
+      // How fast the hand was moving when it let go, in px per frame, capped
+      // so a flick drifts rather than launches.
+      const now = performance.now();
+      const dt = Math.max(8, now - lastMoveT);
+      lastMoveT = now;
+      vx = clamp(((x - prevX) / dt) * 16, -8, 8);
+      vy = clamp(((y - prevY) / dt) * 16, -8, 8);
+    }
+
+    /*
+     * A window has edges and a page does not. Holding the ship against the top
+     * or bottom of the window scrolls the page underneath it, so a drag can
+     * reach the footer instead of stopping wherever the screen happens to end.
+     */
+    function edgeScroll() {
+      if (pointer === null) { dragRaf = 0; return; }
+      let d = 0;
+      if (handY < EDGE) d = -Math.min(24, (EDGE - handY) * 0.4);
+      else if (handY > window.innerHeight - EDGE) {
+        d = Math.min(24, (handY - (window.innerHeight - EDGE)) * 0.4);
+      }
+      if (d) {
+        const from = window.scrollY;
+        scrollNow(d);
+        // Only redraw when the page actually had somewhere to go.
+        if (window.scrollY !== from) applyDrag(false);
+      }
+      dragRaf = requestAnimationFrame(edgeScroll);
+    }
+
+    craft.addEventListener('pointerdown', (e) => {
+      if (mode !== 'idle') return;
+      pointer = e.pointerId;
+      // Capture keeps the drag alive when the cursor outruns the ship. It can
+      // throw for a pointer the element never really owned, and that must not
+      // take the whole interaction down with it.
+      try {
+        craft.setPointerCapture(pointer);
+      } catch {
+        /* Dragging still works, it just stops if the pointer leaves. */
+      }
+      craft.setAttribute('data-dragging', '');
+      // Catching it stops it dead.
+      cancelAnimationFrame(glideRaf);
+      glideRaf = 0;
+      vx = 0;
+      vy = 0;
+      lastMoveT = performance.now();
+      grabX = x;
+      grabY = y;
+      startX = e.pageX;
+      startY = e.pageY;
+      handX = e.clientX;
+      handY = e.clientY;
+      moved = 0;
+      if (!dragRaf) dragRaf = requestAnimationFrame(edgeScroll);
+    });
+
+    craft.addEventListener('pointermove', (e) => {
+      if (pointer === null || e.pointerId !== pointer) return;
+      handX = e.clientX;
+      handY = e.clientY;
+      applyDrag(true);
+    });
+
+    const release = () => {
+      if (pointer === null) return;
+      pointer = null;
+      cancelAnimationFrame(dragRaf);
+      dragRaf = 0;
+      craft.removeAttribute('data-dragging');
+      // Under the threshold it was a click, not a short drag.
+      if (moved < 5) {
+        // pointerup is followed by a click from the same gesture. With motion
+        // that click lands mid-warp and the exit below ignores it, but under
+        // reduced motion enter() finishes synchronously, so the click would
+        // arrive with the ship already behind the panel and throw the reader
+        // straight back out. Spend that one click here.
+        swallowClick = true;
+        enter();
+        return;
+      }
+      // It was a throw. Reduced motion gets none of the coasting: the ship
+      // simply stays where the hand left it.
+      if (!still()) glide();
+    };
+
+    craft.addEventListener('pointerup', release);
+    craft.addEventListener('pointercancel', release);
+
+    // Clicking the ship again is the other way out.
+    craft.addEventListener('click', () => {
+      if (swallowClick) { swallowClick = false; return; }
+      if (mode === 'behind') leave();
+    });
+
+    returnButton.addEventListener('click', leave);
+    /* Typing always beats flying: never take a key from a field or a shortcut. */
+    const typing = (t: EventTarget | null) =>
+      !!(t as HTMLElement | null)?.closest?.(
+        'input, textarea, select, [contenteditable=""], [contenteditable="true"]',
+      );
+
+    /*
+     * How far the camera may travel. This used to be a flat viewport and a
+     * bit, which on a page 25000 pixels tall meant you hit an invisible wall
+     * a moment after arriving. The real limit is the page itself: the camera
+     * may bring any point of it to the middle of the screen, and no further
+     * than half a screen beyond its edges.
+     *
+     * The bounds are lopsided because the anchor is wherever the ship was
+     * left. Arrive near the top and there is little above you and a great
+     * deal below. The horizontal pair is inverted against the vertical one
+     * because the panel is mirrored, so screen-left is page-right.
+     */
+    /*
+     * Flight speed. A flat 26 pixels a frame was fine over a headline and
+     * hopeless over the page: magnified, the document is some 25000 pixels
+     * tall, which took a quarter of a minute to cross. Speed is taken from
+     * the viewport and from how far in you are, so crossing the page costs
+     * about the same however large the type you arrived on.
+     */
+    const stepX = () => window.innerWidth * 0.035 * (scaleNow / 7.5);
+    const stepY = () => window.innerHeight * 0.07 * (scaleNow / 7.5);
+
+    /*
+     * Change how close you are, keeping whatever sits in the middle of the
+     * screen in the middle of the screen. The camera offset is measured in
+     * screen pixels, so it has to be rescaled by the same factor or the view
+     * would slide sideways as it magnifies.
+     */
+    /*
+     * Where the throttle is set, as opposed to where the ship has got to. A
+     * tap nudges it, holding drives it, and fly() closes the gap. Nothing here
+     * touches the page: committing the magnification is a relayout, and doing
+     * that per frame is what the whole arrangement exists to avoid.
+     */
+    function throttle(direction: number) {
+      scaleTarget = clamp(
+        direction > 0 ? scaleTarget * ZOOM_STEP : scaleTarget / ZOOM_STEP,
+        ZOOM_MIN,
+        ZOOM_MAX,
+      );
+      paintThrottle();
+      // With no flight loop running there is nothing to ease it, so under
+      // reduced motion the change simply happens.
+      if (still()) {
+        rescale(scaleTarget);
+        behindScale = scaleNow;
+        if (zoomed) panel.style.zoom = String(behindScale);
+        applyZoomed(camX, camY);
+      }
+    }
+
+    /*
+     * Move to a new magnification, keeping whatever is in the middle of the
+     * screen in the middle of the screen. The camera offset is in screen
+     * pixels and only means anything at one scale, so it is carried across by
+     * the same factor; without this the view slides sideways as it closes in.
+     */
+    function rescale(next: number) {
+      const ratio = next / scaleNow;
+      scaleNow = next;
+      camX *= ratio;
+      camY *= ratio;
+      aimX *= ratio;
+      aimY *= ratio;
+    }
+
+    function aimLimits() {
+      const z = scaleNow;
+      const halfW = window.innerWidth / 2;
+      const halfH = window.innerHeight / 2;
+      return {
+        xMin: -originX * z - halfW,
+        xMax: (anchorWidth - originX) * z + halfW,
+        yMin: -(anchorHeight - originY) * z - halfH,
+        yMax: originY * z + halfH,
+      };
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { leave(); return; }
+      if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target)) return;
+      // The keys belong to the cockpit. Out on the page they would fight the
+      // reader's own scrolling for no reason: the ship is right there to grab.
+      if (mode !== 'behind') return;
+      const k = e.key.toLowerCase();
+
+      if (k === 'e' || k === 'q') {
+        held.add(k);
+        paint();
+        // One press, one notch. Held down it would relayout the magnified
+        // page on every frame, which is the one thing this cannot afford.
+        if (!e.repeat) throttle(k === 'e' ? 1 : -1);
+        return;
+      }
+
+      if (k !== 'w' && k !== 'a' && k !== 's' && k !== 'd') return;
+      held.add(k);
+      paint();
+
+      // Reduced motion runs no flight loop, so the keys move the camera
+      // themselves; otherwise fly() picks the thrust up on the next frame.
+      if (still()) {
+        const t = thrust();
+        const lim = aimLimits();
+        aimX = clamp(aimX - t.ax * stepX() * 4, lim.xMin, lim.xMax);
+        aimY = clamp(aimY - t.ay * stepY() * 4, lim.yMin, lim.yMax);
+        camX = aimX;
+        camY = aimY;
+        applyZoomed(camX, camY);
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      held.delete(e.key.toLowerCase());
+      paint();
+    });
+    // A key held while the window goes away would stay held for ever.
+    window.addEventListener('blur', () => { held.clear(); paint(); });
+  }
+</script>

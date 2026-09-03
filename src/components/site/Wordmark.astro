@@ -1,0 +1,79 @@
+---
+import { siteConfig } from '~/config/site';
+
+export interface Props {
+  /** "plate" is the home page nameplate. "inline" is footer and small use. */
+  variant?: 'plate' | 'inline';
+  /** Wrapping element. Use "h1" only where the name is the page heading. */
+  as?: 'span' | 'h1' | 'p';
+  class?: string;
+}
+
+const { variant = 'inline', as: Tag = 'span', class: className = '' } = Astro.props;
+---
+
+<Tag class:list={['wordmark', `wordmark--${variant}`, className]}>{siteConfig.name}</Tag>
+
+<style>
+  .wordmark {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-tight);
+    display: block;
+  }
+
+  .wordmark--inline {
+    font-size: var(--step-0);
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .wordmark--plate {
+    font-size: var(--step-plate);
+    font-weight: 600;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-plate);
+    /*
+     * --step-plate is tuned to hold one line at every width. The name is a
+     * logotype, so it must never break: `overflow-wrap: anywhere` used to sit
+     * here as a safety net and was doing the opposite, giving the entrance
+     * animation somewhere to break the word. On reload the plate came in at
+     * 0.09em of tracking, which is 173 pixels wider than the box, wrapped to
+     * two lines, and snapped back to one as the tracking closed.
+     */
+    white-space: nowrap;
+    hyphens: none;
+    /* Bone rather than pure white, so the name is the brightest star on the
+       chart without being the only lit thing on the page. The halo is a tight
+       bone-white one for legibility and a wide warm one that matches the
+       accent. Text-shadow rather than a filter, so it costs nothing and never
+       softens the glyph edges. */
+    color: #f1ecdf;
+    text-shadow:
+      0 0 1px rgba(255, 255, 255, 0.3),
+      0 0 20px rgba(242, 237, 225, 0.16),
+      0 0 62px rgba(233, 169, 60, 0.13);
+  }
+
+  /* The name arrives once, on load: it settles down from a wider tracking and
+     a soft blur, as if focusing. Runs a single time and never again. */
+  @media (prefers-reduced-motion: no-preference) {
+    .wordmark--plate { animation: plate-focus 1500ms var(--ease) both; }
+  }
+
+  @keyframes plate-focus {
+    from {
+      opacity: 0;
+      /* Small enough that the wider tracking still fits the box at every
+         width. The blur does most of the focusing anyway. */
+      letter-spacing: 0.012em;
+      filter: blur(16px);
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      letter-spacing: var(--tracking-plate);
+      filter: blur(0);
+      transform: none;
+    }
+  }
+</style>

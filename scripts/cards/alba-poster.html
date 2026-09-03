@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Alba poster</title>
+    <style>
+      /*
+       * Rendered by scripts/render-cards.mjs at six times this size. Everything
+       * here is authored type and vector: no bitmap is scaled up, so the words
+       * stay sharp at any size the site shows them.
+       *
+       * Alba's palette, the site's typefaces. The card lives on
+       * gioviwankenobi.com, so it speaks in the site's voice about the app.
+       */
+      @font-face {
+        font-family: 'Sora';
+        src: url('../../node_modules/@fontsource-variable/sora/files/sora-latin-wght-normal.woff2')
+          format('woff2-variations');
+        font-weight: 100 800;
+      }
+      @font-face {
+        font-family: 'Instrument Sans';
+        src: url('../../node_modules/@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2')
+          format('woff2-variations');
+        font-weight: 400 700;
+      }
+      @font-face {
+        font-family: 'IBM Plex Mono';
+        src: url('../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2')
+          format('woff2');
+        font-weight: 400;
+      }
+
+      :root {
+        --cream: #faf3ea;
+        --cream-deep: #f3e8db;
+        --navy: #161a2b;
+        --coral: #ff4e63;
+        --coral-deep: #f9375a;
+        --muted: #6c7186;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body { width: 390px; height: 844px; }
+
+      body {
+        position: relative;
+        overflow: hidden;
+        background: var(--cream);
+        font-family: 'Instrument Sans', system-ui, sans-serif;
+        color: var(--navy);
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        flex-direction: column;
+        padding: 46px 38px 44px;
+      }
+
+      /* Warmth in the corners, so the cream is not a flat fill. */
+      body::before {
+        content: '';
+        position: absolute;
+        inset: -20%;
+        background:
+          radial-gradient(38% 30% at 82% 8%, rgba(255, 78, 99, 0.16), transparent 70%),
+          radial-gradient(46% 34% at 6% 94%, rgba(255, 78, 99, 0.09), transparent 72%);
+      }
+
+      body > * { position: relative; }
+
+      .mark {
+        font-family: 'Sora', system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 30px;
+        letter-spacing: -0.02em;
+      }
+
+      .mark span { color: var(--coral); }
+
+      .kicker {
+        margin-top: 6px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /*
+       * The phone aspect leaves a tall gap between the wordmark and the claim.
+       * Filling it with a mark rather than air: a device holding three diary
+       * rows, which is the whole proposition in one shape. Flat geometry, not
+       * an illustration; Alba already has a character and this is not it.
+       */
+      .art {
+        margin: auto 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .claim {
+        font-family: 'Sora', system-ui, sans-serif;
+        font-weight: 600;
+        font-size: 45px;
+        line-height: 1.04;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      .claim em { font-style: normal; color: var(--coral); }
+
+      .sub {
+        margin-top: 20px;
+        font-size: 17px;
+        line-height: 1.45;
+        color: var(--muted);
+        max-width: 15.5em;
+      }
+
+      /* The three things it does, as a short list rather than a paragraph. */
+      .points {
+        margin-top: 34px;
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+        list-style: none;
+      }
+
+      .points li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 16.5px;
+        font-weight: 500;
+      }
+
+      .points svg { flex: 0 0 auto; }
+
+      .rule {
+        margin-top: 38px;
+        height: 3px;
+        width: 74px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, var(--coral), var(--coral-deep));
+      }
+
+      .foot {
+        margin-top: 20px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p class="mark">Alba<span>.</span></p>
+      <p class="kicker">Calorie counter</p>
+    </div>
+
+    <div class="art">
+      <svg width="150" height="210" viewBox="30 0 130 210" fill="none" aria-hidden="true">
+        <rect x="42" y="6" width="106" height="196" rx="26"
+              stroke="#161A2B" stroke-width="3.5" opacity="0.16" />
+        <rect x="52" y="16" width="86" height="176" rx="18" fill="#FFFFFF" opacity="0.72" />
+        <rect x="82" y="24" width="26" height="4" rx="2" fill="#161A2B" opacity="0.2" />
+
+        <rect x="64" y="52" width="62" height="12" rx="6" fill="#FF4E63" opacity="0.9" />
+        <rect x="64" y="76" width="46" height="10" rx="5" fill="#161A2B" opacity="0.14" />
+        <rect x="64" y="96" width="54" height="10" rx="5" fill="#161A2B" opacity="0.14" />
+        <rect x="64" y="116" width="38" height="10" rx="5" fill="#161A2B" opacity="0.14" />
+
+        <circle cx="95" cy="160" r="20" stroke="#FF4E63" stroke-width="4" opacity="0.35" />
+        <path d="M95 140a20 20 0 0 1 17.3 30" stroke="#FF4E63" stroke-width="4"
+              stroke-linecap="round" />
+
+      </svg>
+    </div>
+
+    <h1 class="claim">Everything stays on your <em>phone</em>.</h1>
+
+    <p class="sub">No account, no servers, no analytics. Your diary never leaves the device.</p>
+
+    <ul class="points">
+      <li>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="#FF4E63" opacity="0.14" />
+          <path d="M6 10.4l2.6 2.6L14 7.6" stroke="#FF4E63" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        A meal logged in seconds
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="#FF4E63" opacity="0.14" />
+          <path d="M6 10.4l2.6 2.6L14 7.6" stroke="#FF4E63" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Barcodes, when you want them
+      </li>
+      <li>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="#FF4E63" opacity="0.14" />
+          <path d="M6 10.4l2.6 2.6L14 7.6" stroke="#FF4E63" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Six languages
+      </li>
+    </ul>
+
+    <div class="rule"></div>
+    <p class="foot">iPhone · iPad · Android</p>
+  </body>
+</html>

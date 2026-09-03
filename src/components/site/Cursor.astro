@@ -1,0 +1,119 @@
+---
+/**
+ * A soft ring that trails the pointer.
+ *
+ * The native cursor is deliberately left visible. Hiding it is the usual way
+ * this effect is done and it is hostile: people lose the one pointer they can
+ * rely on. This only adds a halo around it, and only for fine pointers.
+ */
+---
+
+<div class="cursor" data-cursor aria-hidden="true"></div>
+
+<style>
+  .cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--z-cursor);
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 12%, transparent) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(-100px, -100px, 0);
+    transition: opacity 260ms var(--ease), width 220ms var(--ease),
+      height 220ms var(--ease), margin 220ms var(--ease),
+      border-color 220ms var(--ease);
+    will-change: transform;
+  }
+
+  .cursor.is-on { opacity: 1; }
+
+  .cursor.is-hot {
+    width: 58px;
+    height: 58px;
+    margin: -29px 0 0 -29px;
+    border-color: color-mix(in srgb, var(--accent) 85%, transparent);
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 20%, transparent) 0%,
+      transparent 72%
+    );
+  }
+
+  /* No ring on touch, and none when motion is reduced. */
+  @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+    .cursor { display: none; }
+  }
+</style>
+
+<script>
+  const ring = document.querySelector<HTMLElement>('[data-cursor]');
+  const fine = window.matchMedia('(pointer: fine)').matches;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (ring && fine && !still) {
+    let x = -100;
+    let y = -100;
+    let rx = -100;
+    let ry = -100;
+    let raf = 0;
+
+    const HOT = 'a, button, [role="button"], summary, input, select, textarea';
+
+    // The ring eases toward the pointer, so it lags very slightly. Written
+    // straight to a transform: no layout, no React, no library.
+    const el = ring;
+
+    let framed = false;
+
+    function loop() {
+      framed = true;
+      rx += (x - rx) * 0.18;
+      ry += (y - ry) * 0.18;
+      el.style.transform = `translate3d(${rx.toFixed(2)}px, ${ry.toFixed(2)}px, 0)`;
+      raf = requestAnimationFrame(loop);
+    }
+
+    // Some embedded renderers never run animation frames. Rather than strand
+    // the ring off-screen, write the position straight through if no frame has
+    // arrived shortly after start-up.
+    setTimeout(() => {
+      if (framed) return;
+      window.addEventListener(
+        'pointermove',
+        (e) => { el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`; },
+        { passive: true },
+      );
+    }, 400);
+
+    window.addEventListener(
+      'pointermove',
+      (e) => {
+        x = e.clientX;
+        y = e.clientY;
+        ring.classList.add('is-on');
+        ring.classList.toggle('is-hot', Boolean((e.target as Element)?.closest?.(HOT)));
+      },
+      { passive: true },
+    );
+
+    document.addEventListener('pointerleave', () => ring.classList.remove('is-on'));
+    document.addEventListener('pointerdown', () => ring.classList.add('is-hot'));
+
+    document.addEventListener('visibilitychange', () => {
+      cancelAnimationFrame(raf);
+      if (!document.hidden) raf = requestAnimationFrame(loop);
+    });
+
+    raf = requestAnimationFrame(loop);
+  }
+</script>
