@@ -5,6 +5,7 @@ import { PLATFORMS, STATUS } from '~/config/platforms';
 import { url } from '~/utils/paths';
 import { appImage } from '~/utils/images';
 import type { App } from '~/utils/apps';
+import AppIcon from './AppIcon.astro';
 
 export interface Props {
   app: App;
@@ -67,9 +68,18 @@ const githubReady = typeof data.links.github === 'string' && !data.links.github.
   </div>
 
   <div class="showcase__body">
-    <p class="reveal" style="--reveal-delay:60ms">
+    {/* Icon and state on one line, the same pairing the catalogue cards use.
+        Left-aligned rather than pushed apart: this column is wide enough that
+        space-between would strand the pill at the far edge. */}
+    <div class="showcase__top reveal" style="--reveal-delay:60ms">
+      <AppIcon
+        src={data.icon}
+        name={data.name}
+        size={64}
+        loading={eager ? 'eager' : 'lazy'}
+      />
       <span class="status" data-status={data.status}>{STATUS[data.status].label}</span>
-    </p>
+    </div>
 
     <h3 class="showcase__name reveal" style="--reveal-delay:120ms">
       <a href={href}>{data.name}</a>
@@ -213,6 +223,19 @@ const githubReady = typeof data.links.github === 'string' && !data.links.github.
   /* --- body -------------------------------------------------------------- */
 
   .showcase__body { display: grid; gap: var(--space-s); align-content: start; }
+
+  .showcase__top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+  }
+
+  /* The icon is the app's own artwork, so it carries the app's colour under
+     it rather than the site's. Enough to seat it on the page, not enough to
+     compete with the poster beside it. */
+  .showcase__top :global(.app-icon) {
+    box-shadow: 0 12px 34px color-mix(in srgb, var(--app-accent) 26%, transparent);
+  }
 
   .showcase__name {
     font-size: var(--step-4);

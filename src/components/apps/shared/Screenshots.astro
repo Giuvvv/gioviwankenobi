@@ -57,6 +57,7 @@ const shots = screenshots.map((shot) => ({ ...shot, image: appImage(shot.src) })
                     sizes="(min-width: 48rem) 404px, calc(80vw - 12px)"
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
+                    style={shot.focus ? `object-position:${shot.focus}` : undefined}
                   />
                 </div>
               </div>

@@ -268,27 +268,57 @@ const chart = apps.map((app) => ({
     }
 
     function reposition() {
+      /*
+       * Where the constellations already placed ended up. Each was previously
+       * positioned against the page content alone, which on a full app page
+       * pushed several of them into the same free pocket: they overlapped and
+       * read as one tangled shape instead of two catalogued objects.
+       */
+      const taken: [number, number][] = [];
+      // A constellation reaches about `spread` sideways and 0.72 of that
+      // vertically, with its name below, so this keeps a clear lane between
+      // two of them. The vertical distance is scaled to match that ellipse.
+      const gap = spread * 1.8;
+      const apart = (x: number, y: number) =>
+        taken.every(([px, py]) => Math.hypot(x - px, (y - py) / 0.75) > gap);
+
+      const slots = PROBE.map(([dx, dy]) => (g: (typeof groups)[number]) => [
+        Math.min(0.93, Math.max(0.07, g.ax + dx)),
+        Math.min(0.88, Math.max(0.1, g.ay + dy)),
+      ] as [number, number]);
+
       for (const g of groups) {
         g.hx = g.ax;
         g.hy = g.ay;
         let placed = false;
-        // First pass: demand a completely clear footprint.
-        for (const [dx, dy] of PROBE) {
-          const nx = Math.min(0.93, Math.max(0.07, g.ax + dx));
-          const ny = Math.min(0.88, Math.max(0.1, g.ay + dy));
-          if (footprintClear(nx * w, ny * h)) {
+
+        // Best: clear of the content and clear of its neighbours.
+        for (const slot of slots) {
+          const [nx, ny] = slot(g);
+          if (footprintClear(nx * w, ny * h) && apart(nx * w, ny * h)) {
             g.hx = nx;
             g.hy = ny;
             placed = true;
             break;
           }
         }
-        // Fallback on a crowded page: a free centre is better than nothing,
-        // because the centre is what the pointer is tested against.
+        // Next best: off the content, even if it crowds a neighbour.
         if (!placed) {
-          for (const [dx, dy] of PROBE) {
-            const nx = Math.min(0.93, Math.max(0.07, g.ax + dx));
-            const ny = Math.min(0.88, Math.max(0.1, g.ay + dy));
+          for (const slot of slots) {
+            const [nx, ny] = slot(g);
+            if (footprintClear(nx * w, ny * h)) {
+              g.hx = nx;
+              g.hy = ny;
+              placed = true;
+              break;
+            }
+          }
+        }
+        // Last resort on a crowded page: a free centre beats nothing, because
+        // the centre is what the pointer is tested against.
+        if (!placed) {
+          for (const slot of slots) {
+            const [nx, ny] = slot(g);
             if (skyAt(nx * w, ny * h)) {
               g.hx = nx;
               g.hy = ny;
@@ -296,6 +326,8 @@ const chart = apps.map((app) => ({
             }
           }
         }
+
+        taken.push([g.hx * w, g.hy * h]);
       }
     }
 

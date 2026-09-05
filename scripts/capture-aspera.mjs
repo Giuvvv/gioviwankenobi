@@ -199,15 +199,33 @@ try {
    * signed in, and one empty screen should not cost the whole run.
    */
   const SCREENS = [
-    ['/', 'screenshot-home.png'],
-    ['/templates', 'screenshot-templates.png'],
-    ['/exercises', 'screenshot-exercises.png'],
-    ['/history', 'screenshot-history.png'],
-    ['/progress', 'screenshot-progress.png'],
+    ['home', '/', 'screenshot-home.png'],
+    ['templates', '/templates', 'screenshot-templates.png'],
+    ['exercises', '/exercises', 'screenshot-exercises.png'],
+    ['history', '/history', 'screenshot-history.png'],
+    ['progress', '/progress', 'screenshot-progress.png'],
+    // Both need a state the app does not have by default: a session actually
+    // running, and an account with the coach role and a connected client.
+    ['active', '/active', 'screenshot-active.png'],
+    ['coach', '/coach', 'screenshot-coach.png'],
+    ['coach-plan', '/coach-plan', 'screenshot-coach-plan.png'],
   ];
 
+  /*
+   * ONLY=active,coach captures just those. Without it every screen is taken,
+   * which is right for a first run and wrong for a second: the later screens
+   * need a different signed-in state, and a full run would overwrite good
+   * shots with whatever the profile happens to hold at that moment.
+   */
+  const only = (process.env.ONLY ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const wanted = only.length ? SCREENS.filter(([name]) => only.includes(name)) : SCREENS;
+  if (only.length && wanted.length !== only.length) {
+    const known = SCREENS.map(([n]) => n).join(', ');
+    throw new Error(`ONLY names an unknown screen. Available: ${known}`);
+  }
+
   const skipped = [];
-  for (const [path, file] of SCREENS) {
+  for (const [, path, file] of wanted) {
     const state = path === '/' ? { ok: true } : await goto(page, path);
     if (!state.ok) {
       skipped.push(`${path} (${state.reason})`);

@@ -7,7 +7,7 @@ summary: >-
   timer that still fires with the screen locked. The training data lives in a
   database on the phone; an account backs it up and is what lets a coach see a
   report when you choose to share one.
-status: in-development
+status: beta
 featured: true
 order: 2
 isDemo: false
@@ -59,18 +59,39 @@ screenshots:
       up, so the first session is a tap away rather than an evening of data
       entry. Each is a real template you can edit, rename or throw away, and
       your own sit beside them in the same list.
+  - src: aspera/screenshot-active.png
+    alt: >-
+      A live Upper session, one minute in, showing Barbell Bench Press with a
+      "Last session, Sep 2" panel listing 46.5 kg by 10, 80 kg by 8 at RIR 3,
+      80 kg by 7 at RIR 2 and 77.5 kg by 7 at RIR 1; set one is active with the
+      weight already set to 46.5 kg and ten reps, sets two and three are queued
+      at 80 kg, and a Finish workout button sits at the bottom.
+    caption: What you lifted last time, before you have to remember it.
+    # Nudged down: cropping from the top stops just under the WEIGHT and REPS
+    # labels, hiding the prefilled numbers that are the whole point of the shot.
+    focus: center 25%
+    body: >-
+      Every set of the last session is on screen while you do this one, and the
+      fields arrive already filled with those numbers rather than empty. You are
+      not recalling what you did in August, you are looking at it: add two and a
+      half kilos or one more rep and the progression is deliberate instead of
+      guessed. The set you are on stays open, the ones you have finished
+      collapse out of the way.
   - src: aspera/screenshot-exercises.png
     alt: >-
-      The exercise library listing twenty-nine movements with a search field
-      and filters by muscle group; Barbell Bench Press, Barbell Curl, Barbell
-      Row, Cable Crunch, Cable Fly, Calf Raise and Chest Press are shown, each
-      tagged Compound or Accessory with its muscle group and equipment.
-    caption: Twenty-nine movements, and what kind each one is.
+      The exercise library with a search field, a New button and filters by
+      muscle group; Barbell Bench Press, Barbell Curl, Barbell Row, Cable
+      Crunch, Cable Fly, Calf Raise and Chest Press are listed, each tagged
+      Compound or Accessory with its muscle group and equipment.
+    caption: The main lifts are there. The rest you add.
     body: >-
-      Every exercise carries its muscle group, its equipment and, crucially,
-      whether it is a compound or an accessory. That label is not decoration:
-      it decides how the movement is read later, because a bench press and a
-      cable fly do not get judged by the same number.
+      The library arrives with the movements most programmes are built from,
+      and it is yours to extend: add what you actually do, edit what is there,
+      rename or remove the rest. Each one carries its muscle group, its
+      equipment and, crucially, whether it is a compound or an accessory. That
+      label is not decoration: it decides how the movement is read later,
+      because a bench press and a cable fly do not get judged by the same
+      number.
   - src: aspera/screenshot-history.png
     alt: >-
       The history screen, subtitled "Every set, always easy to find", listing
@@ -96,6 +117,32 @@ screenshots:
       sit the per-exercise trends: estimated one-rep max and load for the
       compounds, reps at equal load and set volume for the accessories.
 
+  - src: aspera/screenshot-coach.png
+    alt: >-
+      The coach calendar screen, with Giovanni Cliente selected under a list of
+      athletes, September 2026 shown as a month grid with coloured dots on the
+      days that carry sessions, a button for the monthly performance report and
+      one to refresh the calendar.
+    caption: A coach can follow along, if you invite one.
+    body: >-
+      An athlete hands over a coach code, and from then on the coach sees that
+      calendar: which sessions happened, what was lifted in them, and the
+      monthly performance report built from the same data. It is the athlete
+      who connects and the athlete who disconnects, and disconnecting stops the
+      reading there and then. What it cannot do is call back a report already
+      exported: a PDF, once saved, belongs to whoever has it.
+  - src: aspera/screenshot-coach-plan.png
+    alt: >-
+      The add workout screen a coach uses, with tabs for their own workouts and
+      the athlete's, buttons to create a workout or an exercise, and a list to
+      choose from: Legs, Lower, Pull, Push and Upper, each with six exercises.
+    caption: And put the work in your calendar.
+    body: >-
+      The coach picks a template, from their own library or the athlete's, and
+      assigns it to a day. It lands in the athlete's calendar as planned work,
+      ready to start with the loads already set, and stays separate from what
+      was actually lifted: a plan never touches volume, records or progress.
+
 features:
   - title: The set in front of you, not the spreadsheet
     body: >-
@@ -117,13 +164,16 @@ features:
       one-rep max with Epley and tracks load for the compounds, and looks at
       reps at equal load, performance inside the range and set volume for the
       accessories. Records cover load, reps, volume and estimated 1RM.
-  - title: A report a coach can read
+  - title: A coach, on the athlete's terms
     body: >-
-      One performance report, the same for the athlete and the coach: a week or
-      a month, adherence, progression, RIR and RPE, and a set-by-set appendix.
-      It exports as a vector PDF with the fonts embedded. Connecting a coach is
-      the athlete's decision, and so is disconnecting, which stops further
-      reading without needing the coach to agree.
+      A coach code connects the two: from then on the coach can follow the
+      athlete's calendar, see the sessions and the loads in them, and add
+      training programmes to it. The same performance report serves both sides,
+      a week or a month of adherence, progression and RIR or RPE with a
+      set-by-set appendix, exported as a vector PDF. Connecting is the athlete's
+      decision, and so is disconnecting, which stops further reading without
+      needing the coach to agree — though a report already exported stays with
+      whoever downloaded it.
 ---
 
 Aspera is a training log for people who lift. The whole design assumes you are

@@ -27,6 +27,13 @@ const media = z.object({
    * is just a picture in a row, which says nothing on its own.
    */
   body: z.string().optional(),
+  /*
+   * Which band of a tall screenshot the app page shows, as a CSS
+   * object-position. The tour crops from the top, which suits most screens
+   * because that is where their point is made; it does not suit one whose
+   * subject sits lower, and cropping it away is worse than a longer page.
+   */
+  focus: z.string().optional(),
 });
 
 /**
