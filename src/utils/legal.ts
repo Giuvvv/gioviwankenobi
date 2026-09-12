@@ -5,6 +5,7 @@ import type { LegalKind } from '~/utils/apps';
 export const LEGAL_LABELS: Record<LegalKind, string> = {
   privacy: 'Privacy Policy',
   terms: 'Terms of Use',
+  'delete-account': 'Account Deletion',
 };
 
 /**

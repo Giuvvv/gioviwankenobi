@@ -3,7 +3,18 @@ import { siteConfig, type Locale } from '~/config/site';
 
 export type App = CollectionEntry<'apps'>;
 export type LegalDoc = CollectionEntry<'legal'>;
-export type LegalKind = 'privacy' | 'terms';
+/*
+ * "delete-account" is a document in its own right, not a section of the
+ * privacy policy: Google Play asks for a separate, publicly reachable URL
+ * where an account can be closed, and it has to resolve without signing in.
+ */
+export type LegalKind = 'privacy' | 'terms' | 'delete-account';
+
+export const LEGAL_KINDS = ['privacy', 'terms', 'delete-account'] as const;
+
+/** Narrows a filename fragment, so a bad one fails the build with a message. */
+const isLegalKind = (value: string | undefined): value is LegalKind =>
+  (LEGAL_KINDS as readonly (string | undefined)[]).includes(value);
 
 /** Parsed identity of a legal document, derived from its file path. */
 export type LegalRef = {
@@ -65,10 +76,10 @@ export async function getLegalRefs(): Promise<LegalRef[]> {
     if (!scope || !file) continue;
     const [kind, locale] = file.split('.');
 
-    if (kind !== 'privacy' && kind !== 'terms') {
+    if (!isLegalKind(kind)) {
       throw new Error(
-        `Legal document "${entry.id}" must be named privacy.<locale>.md or ` +
-          `terms.<locale>.md. Got "${file}".`,
+        `Legal document "${entry.id}" must be named ` +
+          `${LEGAL_KINDS.map((k) => `${k}.<locale>.md`).join(', ')}. Got "${file}".`,
       );
     }
     // A file that would otherwise be dropped in silence fails the build.
@@ -99,7 +110,7 @@ export async function missingLegalTranslations(): Promise<
   const gaps: { app: string; kind: LegalKind; locales: string[] }[] = [];
 
   for (const app of apps) {
-    for (const kind of ['privacy', 'terms'] as LegalKind[]) {
+    for (const kind of LEGAL_KINDS) {
       const have = new Set(
         refs.filter((r) => r.scope === app.id && r.kind === kind).map((r) => r.locale),
       );

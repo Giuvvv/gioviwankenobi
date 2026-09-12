@@ -3,7 +3,7 @@ import { Icon } from 'astro-icon/components';
 import { LEGAL_LABELS, legalUrl } from '~/utils/legal';
 import { languageName } from '~/utils/format';
 import { siteConfig } from '~/config/site';
-import { localesFor, type LegalKind, type LegalRef } from '~/utils/apps';
+import { LEGAL_KINDS, localesFor, type LegalRef } from '~/utils/apps';
 
 export interface Props {
   scope: string;
@@ -13,8 +13,7 @@ export interface Props {
 
 const { scope, refs, headingId } = Astro.props;
 
-const kinds: LegalKind[] = ['privacy', 'terms'];
-const documents = kinds
+const documents = LEGAL_KINDS
   .map((kind) => ({ kind, locales: localesFor(refs, kind) }))
   .filter((d) => d.locales.length > 0);
 ---
