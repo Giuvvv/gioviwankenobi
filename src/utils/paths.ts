@@ -7,7 +7,17 @@
  * both https://<user>.github.io/<repo>/ and https://gioviwankenobi.com/.
  */
 
-const BASE = import.meta.env.BASE_URL; // always starts and ends with "/" in Astro
+/*
+ * Astro keeps `base` exactly as it was configured, and the workflow feeds it
+ * from `actions/configure-pages`, which reports a project site's base_path
+ * WITHOUT a trailing slash ("/gioviwankenobi"). BASE_URL is therefore not the
+ * "/…/" the Astro docs imply, and every helper below concatenates onto it:
+ * unnormalised, the whole site ships links like "/gioviwankenobiabout/".
+ * At the domain root the base is "/" and the fault is invisible, which is
+ * exactly why it has to be handled here rather than at the call sites.
+ */
+const RAW_BASE = import.meta.env.BASE_URL;
+const BASE = RAW_BASE.endsWith('/') ? RAW_BASE : `${RAW_BASE}/`;
 
 /** Build an internal URL. `url('/apps', slug)` -> "/base/apps/my-app/". */
 export function url(...segments: (string | number | undefined | null)[]): string {
