@@ -14,25 +14,49 @@
  * "/…/" the Astro docs imply, and every helper below concatenates onto it:
  * unnormalised, the whole site ships links like "/gioviwankenobiabout/".
  * At the domain root the base is "/" and the fault is invisible, which is
- * exactly why it has to be handled here rather than at the call sites.
+ * exactly why it has to be handled here rather than at the call sites -- and
+ * why the joining below is a pure function with its own tests: this is the one
+ * piece of the site that production exercises in a shape localhost never does.
  */
-const RAW_BASE = import.meta.env.BASE_URL;
-const BASE = RAW_BASE.endsWith('/') ? RAW_BASE : `${RAW_BASE}/`;
+export function normaliseBase(raw: string): string {
+  if (!raw) return '/';
+  const withLead = raw.startsWith('/') ? raw : `/${raw}`;
+  return withLead.endsWith('/') ? withLead : `${withLead}/`;
+}
 
-/** Build an internal URL. `url('/apps', slug)` -> "/base/apps/my-app/". */
-export function url(...segments: (string | number | undefined | null)[]): string {
+/** `url()` and `asset()` against an explicit base. Exported so it is testable. */
+export function joinBase(
+  base: string,
+  ...segments: (string | number | undefined | null)[]
+): string {
+  const root = normaliseBase(base);
   const path = segments
     .filter((s): s is string | number => s !== undefined && s !== null && s !== '')
     .map((s) => String(s).replace(/^\/+|\/+$/g, ''))
     .filter(Boolean)
     .join('/');
-  if (!path) return BASE;
-  return `${BASE}${path}/`;
+  if (!path) return root;
+  return `${root}${path}/`;
+}
+
+/** A file in /public against an explicit base. Keeps the extension. */
+export function joinAsset(base: string, path: string): string {
+  return `${normaliseBase(base)}${path.replace(/^\/+/, '')}`;
+}
+
+// `import.meta.env` is Vite's, and Astro always defines it. The optional chain
+// is for the one caller that runs outside Vite -- paths.test.ts, which imports
+// this module for the pure functions above and never reaches a bare url().
+const BASE = normaliseBase(import.meta.env?.BASE_URL ?? '/');
+
+/** Build an internal URL. `url('/apps', slug)` -> "/base/apps/my-app/". */
+export function url(...segments: (string | number | undefined | null)[]): string {
+  return joinBase(BASE, ...segments);
 }
 
 /** Reference a file in /public. Keeps the extension, adds no trailing slash. */
 export function asset(path: string): string {
-  return `${BASE}${path.replace(/^\/+/, '')}`;
+  return joinAsset(BASE, path);
 }
 
 /** Absolute URL against the configured production origin, for canonical/OG tags. */
