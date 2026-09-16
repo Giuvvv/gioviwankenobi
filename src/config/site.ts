@@ -29,8 +29,16 @@ export const siteConfig = {
    */
   legalName: 'Giovan Battista Lo Buglio',
 
-  /** Used for <title> suffixes and the OG site_name. */
+  /** The footer blurb, under the wordmark. */
   shortDescription: 'Independent software developer',
+
+  /*
+   * What follows the name in the home page's <title>, and so the only words
+   * the site gets to describe itself inside a search result. Short on purpose:
+   * a title has roughly sixty characters before Google truncates it, and the
+   * name has to survive that cut whole.
+   */
+  titleSuffix: 'Independent Developer',
 
   /** Default meta description. Keep under ~155 characters. */
   description:

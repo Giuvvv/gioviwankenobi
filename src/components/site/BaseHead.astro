@@ -29,7 +29,16 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
 const socialImage = new URL(asset(ogImage), Astro.site ?? Astro.url.origin);
-const fullTitle = title === siteConfig.name ? title : `${title} - ${siteConfig.name}`;
+/*
+ * The home page passes the site name as its title, and a bare "gioviwankenobi"
+ * in a search result says nothing to anyone who does not already know it. Every
+ * other page carries the name as the suffix instead, so the brand is in both
+ * without ever being repeated.
+ */
+const fullTitle =
+  title === siteConfig.name
+    ? `${title} - ${siteConfig.titleSuffix}`
+    : `${title} - ${siteConfig.name}`;
 ---
 
 <meta charset="utf-8" />
