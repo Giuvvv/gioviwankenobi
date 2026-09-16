@@ -1,6 +1,6 @@
 ---
 title: "Política de privacidade"
-updated: 2026-09-01
+updated: 2026-09-16
 version: "1.0"
 intro: "Como a Alba trata os teus dados. Informação prestada nos termos dos artigos 13.º e 14.º do Regulamento (UE) 2016/679 (RGPD)."
 isPlaceholder: false
@@ -184,7 +184,7 @@ Contar calorias e acompanhar o peso não é uma atividade neutra para uma pessoa
 
 As páginas que estás a ler estão alojadas no GitHub Pages. <strong>Não usam cookies</strong>, não contêm ferramentas de analítica e não traçam perfis de quem as visita.
 
-Como qualquer site, o fornecedor de alojamento (GitHub, Inc., empresa norte-americana do grupo Microsoft) regista dados técnicos de ligação, incluindo o endereço IP, para prestar e proteger o serviço: o GitHub é responsável por esse tratamento, descrito na sua <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">declaração de privacidade</a> e na sua <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">página sobre proteção de dados</a>. O tipo de letra é servido pelo Google Fonts, que também recebe o endereço IP do pedido.
+Como qualquer site, o fornecedor de alojamento (GitHub, Inc., empresa norte-americana do grupo Microsoft) regista dados técnicos de ligação, incluindo o endereço IP, para prestar e proteger o serviço: o GitHub é responsável por esse tratamento, descrito na sua <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">declaração de privacidade</a> e na sua <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">página sobre proteção de dados</a>.
 
 O texto integral destes documentos pode também ser consultado dentro da aplicação, onde o ecrã <em>Privacidade e dados</em> não precisa de qualquer ligação.
 

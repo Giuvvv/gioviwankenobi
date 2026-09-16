@@ -1,6 +1,6 @@
 ---
 title: "Privacy policy"
-updated: 2026-09-01
+updated: 2026-09-16
 version: "1.0"
 intro: "How Alba handles your data. Provided under Articles 13 and 14 of Regulation (EU) 2016/679 (GDPR)."
 isPlaceholder: false
@@ -183,7 +183,7 @@ Counting calories and tracking weight is not a neutral activity for a growing pe
 
 The pages you are reading are hosted on GitHub Pages. They <strong>use no cookies</strong>, contain no analytics and do not profile visitors.
 
-Like any website, the hosting provider (GitHub, Inc., a US company in the Microsoft group) records technical connection data, including your IP address, in order to deliver and protect the service. GitHub is the controller of that processing, described in its <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">privacy statement</a> and its <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">data protection page</a>. The typeface is served by Google Fonts, which likewise receives the IP address of the request.
+Like any website, the hosting provider (GitHub, Inc., a US company in the Microsoft group) records technical connection data, including your IP address, in order to deliver and protect the service. GitHub is the controller of that processing, described in its <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">privacy statement</a> and its <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">data protection page</a>.
 
 The full text of these documents is also available inside the app, where the <em>Privacy and data</em> screen needs no connection at all.
 

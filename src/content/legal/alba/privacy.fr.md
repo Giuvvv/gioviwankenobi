@@ -1,6 +1,6 @@
 ---
 title: "Politique de confidentialité"
-updated: 2026-09-01
+updated: 2026-09-16
 version: "1.0"
 intro: "Comment Alba traite vos données. Information fournie au titre des articles 13 et 14 du Règlement (UE) 2016/679 (RGPD)."
 isPlaceholder: false
@@ -184,7 +184,7 @@ Compter les calories et suivre son poids n'est pas une activité neutre pour une
 
 Les pages que vous lisez sont hébergées sur GitHub Pages. Elles <strong>n'utilisent aucun cookie</strong>, ne contiennent aucun outil de mesure d'audience et ne profilent pas leurs visiteurs.
 
-Comme tout site, l'hébergeur (GitHub, Inc., société américaine du groupe Microsoft) enregistre des données techniques de connexion, dont l'adresse IP, pour fournir et protéger le service : GitHub est responsable de ce traitement, décrit dans sa <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">déclaration de confidentialité</a> et sa <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">page sur la protection des données</a>. La police est servie par Google Fonts, qui reçoit également l'adresse IP de la requête.
+Comme tout site, l'hébergeur (GitHub, Inc., société américaine du groupe Microsoft) enregistre des données techniques de connexion, dont l'adresse IP, pour fournir et protéger le service : GitHub est responsable de ce traitement, décrit dans sa <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">déclaration de confidentialité</a> et sa <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">page sur la protection des données</a>.
 
 Le texte intégral de ces documents est également consultable dans l'application, où l'écran <em>Confidentialité et données</em> ne nécessite aucune connexion.
 

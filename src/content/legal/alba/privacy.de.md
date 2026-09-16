@@ -1,6 +1,6 @@
 ---
 title: "Datenschutzerklärung"
-updated: 2026-09-01
+updated: 2026-09-16
 version: "1.0"
 intro: "Wie Alba mit deinen Daten umgeht. Information gemäß Artikel 13 und 14 der Verordnung (EU) 2016/679 (DSGVO)."
 isPlaceholder: false
@@ -184,7 +184,7 @@ Kalorien zu zählen und das Gewicht zu verfolgen ist für einen heranwachsenden 
 
 Die Seiten, die du gerade liest, werden auf GitHub Pages gehostet. Sie <strong>verwenden keine Cookies</strong>, enthalten keine Analysewerkzeuge und erstellen keine Profile ihrer Besucher.
 
-Wie jede Website erfasst der Hosting-Anbieter (GitHub, Inc., ein US-Unternehmen der Microsoft-Gruppe) technische Verbindungsdaten, darunter die IP-Adresse, um den Dienst bereitzustellen und zu schützen: dafür ist GitHub verantwortlich; beschrieben ist das in der <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">Datenschutzerklärung</a> und auf der <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">Seite zum Datenschutz</a>. Die Schrift wird von Google Fonts ausgeliefert, das ebenfalls die IP-Adresse der Anfrage erhält.
+Wie jede Website erfasst der Hosting-Anbieter (GitHub, Inc., ein US-Unternehmen der Microsoft-Gruppe) technische Verbindungsdaten, darunter die IP-Adresse, um den Dienst bereitzustellen und zu schützen: dafür ist GitHub verantwortlich; beschrieben ist das in der <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">Datenschutzerklärung</a> und auf der <a href="https://docs.github.com/site-policy/privacy-policies/github-data-protection-agreement" rel="noopener">Seite zum Datenschutz</a>.
 
 Der vollständige Text dieser Dokumente ist auch in der App einsehbar, wo der Bildschirm <em>Datenschutz und Daten</em> ganz ohne Verbindung auskommt.
 
