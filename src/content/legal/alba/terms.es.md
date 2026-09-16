@@ -159,8 +159,6 @@ Fuera de las relaciones con consumidores, son competentes en exclusiva los tribu
 
 Estas condiciones pueden actualizarse, por ejemplo cuando cambia la aplicación. La versión en vigor es siempre la publicada en esta página, con la fecha indicada arriba. Los cambios sustanciales se anuncian en la aplicación; seguir usándola tras una actualización implica aceptar la nueva versión.
 
-Versión 1.0 — 1 de septiembre de 2026.
-
 <span id="contact"></span>
 
 ## Contacto

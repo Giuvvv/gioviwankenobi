@@ -159,8 +159,6 @@ Fora das relações com consumidores, são exclusivamente competentes os tribuna
 
 Estas condições podem ser atualizadas, por exemplo quando a aplicação muda. A versão em vigor é sempre a publicada nesta página, com a data indicada em cima. As alterações substanciais são assinaladas na aplicação; continuar a usá-la após uma atualização significa aceitar a nova versão.
 
-Versão 1.0 — 1 de setembro de 2026.
-
 <span id="contact"></span>
 
 ## Contactos

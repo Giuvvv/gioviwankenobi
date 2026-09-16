@@ -194,8 +194,6 @@ Le texte intégral de ces documents est également consultable dans l'applicatio
 
 Si la manière dont l'application traite les données change, cette page est mise à jour et la version indiquée en haut change avec elle. Les modifications substantielles sont également signalées dans l'application.
 
-Version 1.0 — 1er septembre 2026.
-
 
 ## Contact
 

@@ -194,8 +194,6 @@ La versione integrale di questi documenti è consultabile anche dentro l'app, do
 
 Se cambia il modo in cui l'app tratta i dati, questa pagina viene aggiornata e la versione in alto cambia. Le modifiche sostanziali vengono segnalate anche nell'app.
 
-Versione 1.0 — 1 settembre 2026.
-
 <span id="contact"></span>
 
 ## Contatti

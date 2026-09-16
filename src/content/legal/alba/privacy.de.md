@@ -194,8 +194,6 @@ Der vollständige Text dieser Dokumente ist auch in der App einsehbar, wo der Bi
 
 Ändert sich die Art, wie die App mit Daten umgeht, wird diese Seite aktualisiert und die Version oben ändert sich mit. Wesentliche Änderungen werden zusätzlich in der App angekündigt.
 
-Version 1.0 — 1. September 2026.
-
 <span id="contact"></span>
 
 ## Kontakt

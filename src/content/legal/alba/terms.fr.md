@@ -159,8 +159,6 @@ En dehors des relations avec les consommateurs, les tribunaux de Palerme (Italie
 
 Ces conditions peuvent être mises à jour, par exemple lorsque l'application évolue. La version en vigueur est toujours celle publiée sur cette page, avec la date indiquée en haut. Les modifications substantielles sont signalées dans l'application ; continuer à l'utiliser après une mise à jour vaut acceptation de la nouvelle version.
 
-Version 1.0 — 1er septembre 2026.
-
 
 ## Contact
 

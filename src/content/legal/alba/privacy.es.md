@@ -194,8 +194,6 @@ El texto íntegro de estos documentos también puede consultarse dentro de la ap
 
 Si cambia la forma en que la aplicación trata los datos, esta página se actualiza y la versión indicada arriba cambia con ella. Los cambios sustanciales se anuncian también dentro de la aplicación.
 
-Versión 1.0 — 1 de septiembre de 2026.
-
 <span id="contact"></span>
 
 ## Contacto

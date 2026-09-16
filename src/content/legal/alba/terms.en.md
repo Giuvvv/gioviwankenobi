@@ -158,8 +158,6 @@ Outside consumer relationships, the courts of Palermo, Italy, have exclusive jur
 
 These terms may be updated, for instance when the app changes. The version in force is always the one published on this page, with the date shown at the top. Substantial changes are announced in the app; continuing to use it after an update means accepting the new version.
 
-Version 1.0 — 1 September 2026.
-
 
 ## Contact
 

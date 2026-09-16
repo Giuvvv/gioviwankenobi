@@ -193,8 +193,6 @@ The full text of these documents is also available inside the app, where the <em
 
 If the way the app handles data changes, this page is updated and the version at the top changes with it. Substantial changes are also announced inside the app.
 
-Version 1.0 — 1 September 2026.
-
 
 ## Contact
 

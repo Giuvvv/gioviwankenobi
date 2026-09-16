@@ -159,8 +159,6 @@ Außerhalb von Verbraucherverhältnissen sind ausschließlich die Gerichte von P
 
 Diese Bedingungen können aktualisiert werden, etwa wenn sich die App ändert. Es gilt stets die auf dieser Seite veröffentlichte Fassung mit dem oben angegebenen Datum. Wesentliche Änderungen werden in der App angekündigt; wer die App nach einem Update weiter nutzt, nimmt die neue Fassung an.
 
-Version 1.0 — 1. September 2026.
-
 <span id="contact"></span>
 
 ## Kontakt

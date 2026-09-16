@@ -194,8 +194,6 @@ O texto integral destes documentos pode também ser consultado dentro da aplica�
 
 Se mudar a forma como a aplicação trata os dados, esta página é atualizada e a versão indicada em cima muda com ela. As alterações substanciais são também assinaladas dentro da aplicação.
 
-Versão 1.0 — 1 de setembro de 2026.
-
 <span id="contact"></span>
 
 ## Contactos

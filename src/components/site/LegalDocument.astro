@@ -123,11 +123,36 @@ const description = `${LEGAL_LABELS[doc.kind]} for ${owner}. Last revised ${form
       <div class="prose legal__body">
         <Content />
       </div>
+
+      {/*
+        Derived, never written into the documents. Alba's twelve carried this
+        line by hand, so bumping the revision date in frontmatter left six of
+        them closing on the old one: the same page stating two different dates,
+        which on a binding document is exactly what a reviewer looks for.
+      */}
+      {
+        doc.entry.data.version && (
+          <p class="legal__stamp meta">
+            {t.version} {doc.entry.data.version} &mdash;{' '}
+            <time datetime={isoDate(doc.entry.data.updated)}>
+              {formatDate(doc.entry.data.updated, doc.locale)}
+            </time>
+          </p>
+        )
+      }
     </div>
   </article>
 </BaseLayout>
 
 <style>
+  /* The closing version stamp, quieter than the body it follows. */
+  .legal__stamp {
+    margin-block-start: var(--space-xl);
+    padding-block-start: var(--space-s);
+    border-top: var(--border) solid var(--line);
+    color: var(--ink-faint);
+  }
+
   .legal { padding-block: calc(var(--header-height) + var(--space-l)) var(--space-2xl); }
 
   /* A calm sheet under the text. Legal pages are read, printed and submitted

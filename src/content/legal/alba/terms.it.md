@@ -159,8 +159,6 @@ Fuori dai rapporti con i consumatori, il foro competente in via esclusiva è que
 
 Queste condizioni possono essere aggiornate, per esempio quando l'app cambia. La versione in vigore è sempre quella pubblicata su questa pagina, con la data indicata in alto. Le modifiche sostanziali vengono segnalate nell'app; continuare a usarla dopo l'aggiornamento significa accettare la nuova versione.
 
-Versione 1.0 — 1 settembre 2026.
-
 <span id="contact"></span>
 
 ## Contatti
